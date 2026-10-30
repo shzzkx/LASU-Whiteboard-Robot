@@ -4,6 +4,10 @@
 #include <vector>
 #include <fstream>
 
+//TEMP for debugging
+#include <filesystem>
+namespace fs = std::filesystem;
+
 // To create header file in vex_robot folder:
 std::ofstream output(
     "C:/Users/skhan/vscode_projects/WhiteboardRobot/vex_robot/drawing_data.h"
@@ -12,6 +16,12 @@ std::ofstream output(
 int main() {
     // B1: Load the input image.
     cv::Mat image = cv::imread("drawings/square_drawing.png");
+    
+    //TEMP for debugging
+    std::cout << "CWD: " << std::filesystem::current_path() << '\n';
+    std::string path = "drawings/square_drawing.png";
+    std::cout << "Exists: " << fs::exists(path) << '\n';
+    std::cout << "Absolute: " << fs::absolute(path) << '\n';
 
     if (image.empty()) {
         std::cerr << "Could not load square_drawing.png\n";
@@ -35,7 +45,7 @@ int main() {
     cv::findContours(
         binary,
         contours,
-        cv::RETR_LIST,
+        cv::RETR_EXTERNAL, // Previously RETR_LIST, but that caused contour lines drawn around (insetad of on) outline 
         cv::CHAIN_APPROX_SIMPLE
     );
 
@@ -73,12 +83,20 @@ int main() {
         }
     }
 
+    // Visually confirm contour tracing worked
+    // by creating image of red contours overlayed on original image.
+    // This may be jagged, but the actual (x, y) coordinates will not be.
+    cv::Mat debug = image.clone();
+    cv::drawContours(debug, contours, -1, cv::Scalar(0, 0, 255), 2);
+    cv::imwrite("debug_contours.png", debug);
+
     return 0;
 }
 
-/*
-{0, 10}
-{10, 10}
-{10, 20}
-{0, 0}
+/* --- Sample output for square_drawing.png ---
+Path:
+    x=221.534, y=163.432
+    x=77.521, y=163.15
+    x=77.521, y=34.0366
+    x=221.849, y=34.0366
 */
