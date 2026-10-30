@@ -1,5 +1,5 @@
-
 #include <opencv2/opencv.hpp>
+#include <opencv2/geometry/2d.hpp>
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -11,10 +11,10 @@ std::ofstream output(
 
 int main() {
     // B1: Load the input image.
-    cv::Mat image = cv::imread("drawing.png");
+    cv::Mat image = cv::imread("drawings/square_drawing.png");
 
     if (image.empty()) {
-        std::cerr << "Could not load drawing.png\n";
+        std::cerr << "Could not load square_drawing.png\n";
         return 1;
     }
 
