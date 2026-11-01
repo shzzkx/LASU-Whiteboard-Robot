@@ -1,3 +1,5 @@
-{
-    "cmake.sourceDirectory": "C:/Users/skhan/vscode_projects/WhiteboardRobot/laptop_app"
-}
+   {
+       "cmake.sourceDirectory": "${workspaceFolder}/laptop_app",
+       "cmake.configureArgs": ["-DOpenCV_DIR=C:/opencv/build"],
+       "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+   }
