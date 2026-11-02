@@ -15,11 +15,11 @@ std::ofstream output(
 
 int main() {
     // B1: Load the input image.
-    cv::Mat image = cv::imread("drawings/square_drawing.png");
+    cv::Mat image = cv::imread("../drawings/square_drawing.png");
     
     //TEMP for debugging
     std::cout << "CWD: " << std::filesystem::current_path() << '\n';
-    std::string path = "drawings/square_drawing.png";
+    std::string path = "../drawings/square_drawing.png";
     std::cout << "Exists: " << fs::exists(path) << '\n';
     std::cout << "Absolute: " << fs::absolute(path) << '\n';
 
@@ -49,12 +49,13 @@ int main() {
         cv::CHAIN_APPROX_SIMPLE
     );
 
-    // Example drawing area: 300 mm wide by 200 mm tall.
-    const double boardWidthMm = 300.0;
-    const double boardHeightMm = 200.0;
+    // Example whiteboard area: 300 mm (width) x 200 mm (height).
+    // TODO: Replace with actual whiteboard area dimensions.
+    const double boardWidth_mm = 300.0;
+    const double boardHeight_mm = 200.0;
 
-    const double scaleX = boardWidthMm / image.cols;
-    const double scaleY = boardHeightMm / image.rows;
+    const double scaleX = boardWidth_mm / image.cols;
+    const double scaleY = boardHeight_mm / image.rows;
 
     // Tune this to simplify more or less aggressively.
     const double epsilon = 2.0;
@@ -75,11 +76,11 @@ int main() {
 
         // B5b: Convert pixel coordinates to millimetres.
         for (const auto& p : simplified) {
-            double xMm = p.x * scaleX;
-            double yMm = (image.rows - 1 - p.y) * scaleY;
+            double x_mm = p.x * scaleX;
+            double y_mm = (image.rows - 1 - p.y) * scaleY;
 
-            std::cout << "  x=" << xMm
-                      << ", y=" << yMm << '\n';
+            std::cout << "  x=" << x_mm
+                      << ", y=" << y_mm << '\n';
         }
     }
 
