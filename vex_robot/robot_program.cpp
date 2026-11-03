@@ -50,62 +50,73 @@ float dist_to_deg(float dist){
 
 class Plotter
 {
-private:
-    Point current_point{};
+
 public:
+    Point current_point{};
     Plotter(){
-        current_point.x = 0;
-        current_point.y = 0;
+        current_point = {0,0};
     }
     Plotter(float x, float y){
-        current_point.x = x;
-        current_point.y = y;
+        current_point = {x,y};
     }
+
     ~Plotter();
+
+    void move_point_to_point (Point* destination){
+        // float x_diff = point2->x - point1->x;
+        // float y_diff = point2->y - point1->y;
+
+        Rope new_rope = xy_to_length(destination);
+        Rope current = xy_to_length(current_point);
+
+        float r_left_value = new_rope.rleft;
+        float r_right_value = new_rope.rright;
+
+        float delta_left = current.rleft - new_rope.rleft;
+        float delta_right = current.rright - new_rope.rright;
+        // int numsteps = 1000;
+
+        float slope = delta_left / delta_right;
+        int percent = 20;
+
+        //convert length to degrees
+        float left_deg = dist_to_deg(r_left_value);
+        float right_deg = dist_to_deg(r_right_value);
+
+        if(delta_left>0){
+            leftMotor.spin(forward, slope*percent, percent);
+        }else{
+            leftMotor.spin(reverse, slope*percent, percent);
+        }
+
+        if(delta_right>0){
+            rightMotor.spin(forward, percent, percent);
+        }else{
+            rightMotor.spin(reverse, percent, percent);
+        }
+
+        if(delta_left > delta_right){
+            while(abs(leftMotor.getPosition(degrees)-left_deg) > 10){}
+        }else{
+            while(abs(rightMotor.getPosition(degrees)-right_deg) > 10){}
+        }
+        rightMotor.stop();
+        leftMotor.stop();
+    }
+
+    void move_path(Point* destination)
+    {
+        float delta_x = current_point.x - destination.x;
+        float delta_y = current_point.y - destination.y;
+
+        float num_steps = sqrt(delta_x*delta_x + delta_y*delta_y) / STEP_DIST;
+
+        for(int i=1; i<= num_steps; i++){
+            move_point_to_point({current_point.x+i*STEP_DIST, current_point.y + i*});
+        }
+    }
+
 };
-
-void move_point_to_point (Point* destination){
-    // float x_diff = point2->x - point1->x;
-    // float y_diff = point2->y - point1->y;
-
-    Rope new_rope = xy_to_length(destination);
-    Rope current = xy_to_length(current_point);
-    float r_left_value = new_rope.rleft;
-    float r_right_value = new_rope.rright;
-    // int numsteps = 1000;
-
-    float slope = r_left_value / r_right_value;
-    int percent = 20;
-
-    //convert length to degrees
-    float left_deg = dist_to_deg(r_left_value);
-    float right_deg = dist_to_deg(r_right_value);
-
-    if(r_left_value>0){
-        leftMotor.spin(forward, slope*percent, percent);
-    }else{
-        leftMotor.spin(reverse, slope*percent, percent);
-    }
-
-    if(r_right_value>0){
-        rightMotor.spin(forward, percent, percent);
-    }else{
-        rightMotor.spin(reverse, percent, percent);
-    }
-
-    if(r_left_value > r_right_value){
-        while(abs(leftMotor.getPosition(degrees)-left_deg) > 10){}
-    }else{
-        while(abs(rightMotor.getPosition(degrees)-right_deg) > 10){}
-    }
-    rightMotor.stop();
-    leftMotor.stop();
-}
-
-void move_path(Point* destination)
-{
-
-}
 
 Plotter::~Plotter()
 {
