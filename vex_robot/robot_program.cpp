@@ -13,6 +13,7 @@ brain Brain ;
 inertialBrainInertial = inertial( ) ;
 motor rightMotor(PORT1, bool(forward));
 motor leftMotor(PORT6, bool(reverse));
+// TODO: Add motor that controls pen.
 motor groupmotors (rightMotor, leftMotor);
 
 struct Point
