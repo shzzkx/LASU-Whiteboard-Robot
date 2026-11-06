@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 
+#include "drawing_data.h"
 #include "vex.h"
 using namespace vex;
 using namespace std;
@@ -111,6 +112,8 @@ public:
 
         float num_steps = sqrt(delta_x*delta_x + delta_y*delta_y) / STEP_DIST;
 
+
+
         for(int i=1; i<= num_steps; i++){
             move_point_to_point({current_point.x+i*STEP_DIST, current_point.y + i*});
         }
@@ -122,45 +125,48 @@ Plotter::~Plotter()
 {
 }
 
-void move_point_to_point (Point* destination){
-    // float x_diff = point2->x - point1->x;
-    // float y_diff = point2->y - point1->y;
+// void move_point_to_point (Point* destination){
+//     // float x_diff = point2->x - point1->x;
+//     // float y_diff = point2->y - point1->y;
 
-    Rope new_rope = xy_to_length(destination);
-    float r_left_value = new_rope.rleft;
-    float r_right_value = new_rope.rright;
-    // int numsteps = 1000;
+//     Rope new_rope = xy_to_length(destination);
+//     float r_left_value = new_rope.rleft;
+//     float r_right_value = new_rope.rright;
+//     // int numsteps = 1000;
 
-    float slope = r_left_value / r_right_value;
-    int percent = 20;
+//     float slope = r_left_value / r_right_value;
+//     int percent = 20;
 
-    //convert length to degrees
-    float left_deg = dist_to_deg(r_left_value);
-    float right_deg = dist_to_deg(r_right_value);
+//     //convert length to degrees
+//     float left_deg = dist_to_deg(r_left_value);
+//     float right_deg = dist_to_deg(r_right_value);
 
-    if(r_left_value>0){
-        leftMotor.spin(forward, slope*percent, percent);
-    }else{
-        leftMotor.spin(reverse, slope*percent, percent);
+//     if(r_left_value>0){
+//         leftMotor.spin(forward, slope*percent, percent);
+//     }else{
+//         leftMotor.spin(reverse, slope*percent, percent);
+//     }
+
+//     if(r_right_value>0){
+//         rightMotor.spin(forward, percent, percent);
+//     }else{
+//         rightMotor.spin(reverse, percent, percent);
+//     }
+
+//     if(r_left_value > r_right_value){
+//         while(abs(leftMotor.getPosition(degrees)-left_deg) > 10){}
+//     }else{
+//         while(abs(rightMotor.getPosition(degrees)-right_deg) > 10){}
+//     }
+//     rightMotor.stop();
+//     leftMotor.stop();
+// }
+
+void draw_contour(int contour_number){
+    int num_coord = coordData.numCoords;
+    for(int i=1; i<=num_coord; i++){
+        move_path({coordData::coords[contour_number][i][0], coordData::coords[contour_number][i][1]})
     }
-
-    if(r_right_value>0){
-        rightMotor.spin(forward, percent, percent);
-    }else{
-        rightMotor.spin(reverse, percent, percent);
-    }
-
-    if(r_left_value > r_right_value){
-        while(abs(leftMotor.getPosition(degrees)-left_deg) > 10){}
-    }else{
-        while(abs(rightMotor.getPosition(degrees)-right_deg) > 10){}
-    }
-    rightMotor.stop();
-    leftMotor.stop();
-}
-
-void move_path(){
-
 }
 
 
@@ -170,6 +176,16 @@ int main(){
 
     // Read from .h file
 
-    // Convert into paths
+    //lift marker up
 
+    // Convert into paths
+    int numContours = coordData::numContours;
+    for(int i=0; i<numContours; i++){
+        //lift marker up
+        //move to first point
+        //move marker down
+        draw_contour(i);
+    }
+
+    
 }

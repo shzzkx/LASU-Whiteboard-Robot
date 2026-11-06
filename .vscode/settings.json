@@ -1,5 +1,6 @@
    {
        "cmake.sourceDirectory": "${workspaceFolder}/laptop_app",
        "cmake.configureArgs": ["-DOpenCV_DIR=C:/opencv/build"],
-       "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.default.compilerPath": "D:/Code/download/ucrt64/bin/gcc.exe"
    }
