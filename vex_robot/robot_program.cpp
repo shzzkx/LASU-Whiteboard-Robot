@@ -133,11 +133,9 @@ class Plotter
             float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
 
             float num_steps = sqrt(delta_x*delta_x + delta_y*delta_y) / STEP_DIST;
-            
-
 
             for(int i=1; i<= num_steps; i++){
-                move_point_to_point({current_point.x+i*STEP_DIST, current_point.y + i*});
+                move_point_to_point({current_point.x+i*STEP_DIST/hype_length*delta_x, current_point.y + i*STEP_DIST/hype_length*delta_y});
             }
         }
 
