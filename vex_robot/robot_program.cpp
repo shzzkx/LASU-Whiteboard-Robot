@@ -1,3 +1,5 @@
+#include "iq_cpp.h"
+
 #include <iostream>
 #include <cmath>
 
