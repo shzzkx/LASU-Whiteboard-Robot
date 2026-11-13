@@ -151,7 +151,7 @@ int main()
 
     // Write into header file!
     std::ofstream fileWriter;
-    fileWriter.open("../vex_robot/drawing_data.h");
+    fileWriter.open("../vex_robot/include/drawing_data.h");
 
     // Check if file opened.
     if (!fileWriter.is_open())
