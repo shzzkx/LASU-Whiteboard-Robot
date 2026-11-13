@@ -1,0 +1,161 @@
+#pragma region VEXcode Generated Robot Configuration
+// Make sure all required headers are included.
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include <string.h>
+
+#include "vex.h"
+using namespace vex;
+// Brain should be defined by default
+brain Brain;
+
+// START IQ MACROS
+#define waitUntil(condition)                             \
+do {                                                     \
+wait(5, msec);                                           \
+} while (!(condition))
+#define repeat(iterations)                               \
+for (int iterator = 0; iterator < iterations; iterator++)
+// END IQ MACROS
+
+// Robot configuration code.
+inertial BrainInertial = inertial();
+motor leftMotor = motor(PORT7, false);
+motor rightMotor = motor(PORT12, false);
+motor penMotor = motor(PORT8, false);
+controller Controller = controller();
+
+// generating and setting random seed
+void initializeRandomSeed(){
+wait(100,msec);
+double xAxis = BrainInertial.acceleration(xaxis) * 1000;
+double yAxis = BrainInertial.acceleration(yaxis) * 1000;
+double zAxis = BrainInertial.acceleration(zaxis) * 1000;
+// Combine these values into a single integer
+int seed = int(
+xAxis + yAxis + zAxis
+);
+// Set the seed
+srand(seed);
+}
+
+
+void vexcodeInit() {
+// Initializing random seed.
+initializeRandomSeed();
+}
+
+#pragma endregion VEXcode Generated Robot Configuration
+
+//----------------------------------------------------------------------------
+//                                                                            
+//    Module:       remote-contro.cpp                                                  
+//    Author:       LASU                                                  
+//    Created:      Nov 12, 2026                                                  
+//    Description:  remote control program for software robot                                               
+//                                                                            
+//----------------------------------------------------------------------------
+
+// define variable for remote controller enable/disable
+bool RemoteControlCodeEnabled = true;
+
+
+#include "iq_cpp.h"
+using namespace vex;
+
+bool penIsDown = false;
+
+void penDown() {
+  if (!penIsDown) {
+    penMotor.spinFor(reverse, 90, degrees);
+    penIsDown = true;
+  }
+}
+
+
+void penUp() {
+  if (penIsDown) {
+    penMotor.spinFor(forward, 90, degrees);
+    penIsDown = false;
+  }
+}
+
+/* Controls
+ F Down (press): pen down (90 degrees clockwise)
+ F Up   (press): pen up (90 degrees anticlockwise)
+ L Up   (hold): raise left motor speed
+ L Down (hold): lower left motor speed
+ R Up   (hold): raise right motor speed
+ R Down (hold): lower right motor speed
+ E Up   (hold): spin both motors forward
+ E Down (hold): spin both motors in reverse
+  Release E:     motors stop and hold position
+*/
+
+int main() {
+ 
+  vexcodeInit();
+  
+
+  double vLeft = 30;
+  double vRight = 30;
+  const double step = 1;   // percent changed per loop while a button is held
+
+  // Holds position when stopped.
+  leftMotor.setStopping(hold);
+  rightMotor.setStopping(hold);
+  penMotor.setStopping(hold);  
+
+  for (;;) {
+    // Pen up or down
+    if (Controller.ButtonFDown.pressing()) {
+      penDown();
+    }
+    if (Controller.ButtonFUp.pressing()) {
+      penUp();
+    }
+
+    // Left motor speed
+    if (Controller.ButtonLUp.pressing()) {
+      vLeft = fmin(vLeft + step, 100);
+    }
+    if (Controller.ButtonLDown.pressing()) {
+      vLeft = fmax(vLeft - step, -100);
+    }
+
+    // Right motor speed
+    if (Controller.ButtonRUp.pressing()) {
+      vRight = fmin(vRight + step, 100);
+    }
+    if (Controller.ButtonRDown.pressing()) {
+      vRight = fmax(vRight - step, -100);
+    }
+
+    // Drive
+    if (Controller.ButtonEUp.pressing()) {
+      leftMotor.spin(forward, vLeft, percent);
+      rightMotor.spin(forward, vRight, percent);
+    } else if (Controller.ButtonEDown.pressing()) {
+      leftMotor.spin(reverse, vLeft, percent);
+      rightMotor.spin(reverse, vRight, percent);
+    } else {
+      leftMotor.stop();
+      rightMotor.stop();
+    }
+
+    // current speeds on brain screen
+    Brain.Screen.clearLine(1);
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
+    if (Brain.buttonCheck.pressing()) {
+      Brain.programStop();
+    }
+
+    wait(50, msec);
+
+    if (Brain.buttonCheck.pressing())
+      Brain.programStop();
+  }
+}
