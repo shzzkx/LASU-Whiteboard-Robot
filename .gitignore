@@ -1,0 +1,15 @@
+# Build output (matches at any depth, so laptop_app/build and vex_robot/build are both covered)
+build/
+out/
+x64/
+Debug/
+Release/
+.vs/
+
+# Compiled objects and binaries
+*.obj
+*.o
+*.exe
+
+# Generated debug images
+debug_contours.png
