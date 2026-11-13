@@ -22,13 +22,14 @@ WARNING ERROR CODES
 
 /*
 IMAGE SPECIFICATIONS
-- Image must be black and white (or grayscale).
-- Image cannot be a png.
+- Image must be a png.
+- Does not need to be grayscale since program converts to grayscale;
+  however, needs to have high constrast between colors.
 */
 
 int main()
 {
-    // B1: Load the input image.
+    // Load image from drawings folder.
     cv::Mat image = cv::imread("../drawings/square_drawing.png");
 
     // TEMP for debugging
@@ -37,13 +38,14 @@ int main()
     std::cout << "Exists: " << fs::exists(path) << '\n';
     std::cout << "Absolute: " << fs::absolute(path) << '\n';
 
+
     if (image.empty())
     {
         std::cerr << "Could not load square_drawing.png\n";
         return 1;
     }
 
-    // B2: Convert color to grayscale.
+    // Convert to grayscale.
     cv::Mat gray;
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 

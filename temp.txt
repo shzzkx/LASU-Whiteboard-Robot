@@ -1,0 +1,8 @@
+iq_cpp.h on Shiza's laptop
+
+"C:\Users\skhan\AppData\Roaming\Code\User\globalStorage\vexrobotics.vexcode\sdk\cpp\IQ2\IQ2_20250520_15_00_00\vexiq2\include\iq_cpp.h"
+"C:\Program Files\VEX Robotics\VEXcode IQ\resources\sdk\vexiq\include\iq_cpp.h"
+"C:\Program Files\VEX Robotics\VEXcode IQ\resources\sdk\vexiq2\include\iq_cpp.h"
+
+OpenCV on Shiza's laptop
+"C:\opencv"

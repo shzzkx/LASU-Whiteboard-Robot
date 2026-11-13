@@ -4,16 +4,9 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Program Files\\opencv\\build\\include"
+                "C:/opencv/build/include"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.26100.0",
-            "compilerPath": "D:/Code/download/ucrt64/bin/gcc.exe",
-            "cStandard": "c17",
+            "defines": ["_DEBUG"],
             "cppStandard": "c++17",
             "intelliSenseMode": "windows-msvc-x64"
         }
