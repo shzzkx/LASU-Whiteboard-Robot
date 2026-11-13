@@ -1,6 +1,6 @@
-   {
-       "cmake.sourceDirectory": "C:/Users/skhan/vscode_projects/WhiteboardRobot/laptop_app",
-       "cmake.configureArgs": ["-DOpenCV_DIR=C:/opencv/build"],
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "C_Cpp.default.compilerPath": "D:/Code/download/ucrt64/bin/gcc.exe"
-   }
+{
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.configureArgs": ["-DOpenCV_DIR=C:/opencv/build"],
+    "cmake.configureOnOpen": false,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+}
