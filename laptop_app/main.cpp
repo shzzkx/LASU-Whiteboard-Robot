@@ -34,8 +34,8 @@ IMAGE SPECIFICATIONS
 int main()
 {
     // Load image from drawings folder.
-    // SQUARE DRAWING std::string image_path = "../drawings/square_drawing.png";
-    /* STAR DRAWING */ std::string image_path = "../drawings/star_drawing.jpg";
+    /* SQUARE DRAWING */ std::string image_path = "../drawings/square_drawing.png";
+    // STAR DRAWING std::string image_path = "../drawings/star_drawing.jpg";
     cv::Mat image = cv::imread(image_path);
 
     // TEMP for debugging
@@ -91,7 +91,7 @@ int main()
 
     // Increasing epsilon will simplify the contour more.
     // This is an opencv thing.
-    const double epsilon = 2.0;
+    const double epsilon = 2.5;
 
     const int MAX_CONTOURS = 5; // Maximum # of contours (shapes) per drawing.
                                 // E.g. Image of square will have one contour,
