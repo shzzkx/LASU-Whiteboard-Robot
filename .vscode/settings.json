@@ -1,0 +1,6 @@
+{
+    "cmake.configureOnOpen": false,
+    "cmake.autoSelectActiveFolder": false,
+    "cmake.sourceDirectory": "${workspaceFolder}/laptop_app",
+    "cmake.buildDirectory": "${workspaceFolder}/laptop_app/build"
+}

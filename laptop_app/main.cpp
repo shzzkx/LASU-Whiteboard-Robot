@@ -1,3 +1,7 @@
+/* TO RUN PROGRAM FROM laptop_app:
+        .\build\Release\image_to_paths.exe
+*/
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/geometry/2d.hpp>
 #include <iostream>
@@ -30,18 +34,19 @@ IMAGE SPECIFICATIONS
 int main()
 {
     // Load image from drawings folder.
-    cv::Mat image = cv::imread("../drawings/square_drawing.png");
+    // SQUARE DRAWING std::string image_path = "../drawings/square_drawing.png";
+    /* STAR DRAWING */ std::string image_path = "../drawings/star_drawing.jpg";
+    cv::Mat image = cv::imread(image_path);
 
     // TEMP for debugging
     std::cout << "CWD: " << fs::current_path() << '\n';
-    std::string path = "../drawings/square_drawing.png";
-    std::cout << "Exists: " << fs::exists(path) << '\n';
-    std::cout << "Absolute: " << fs::absolute(path) << '\n';
+    std::cout << "Exists: " << fs::exists(image_path) << '\n';
+    std::cout << "Absolute: " << fs::absolute(image_path) << '\n';
 
 
     if (image.empty())
     {
-        std::cerr << "Could not load square_drawing.png\n";
+        std::cerr << "Could not load " << image_path << "\n";
         return 1;
     }
 
