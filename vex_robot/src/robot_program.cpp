@@ -8,6 +8,7 @@
 
 
 #include "vex.h"
+#include "drawing_data.h"
 
 using namespace vex;
 
@@ -225,11 +226,11 @@ Plotter::~Plotter()
 
 
 void draw_contour(int contour_number, Plotter &plotter){
-    int num_coord = coordData::numCoords;
+    int num_coord = coordData.numCoords[contour_number];
     Point point;
     for(int i=1; i<=num_coord; i++){
-      point.x = coordData::coords[contour_number][i][0];
-      point.y = coordData::coords[contour_number][i][1];
+      point.x = coordData.coords[contour_number][i][0];
+      point.y = coordData.coords[contour_number][i][1];
       plotter.move_path(&point);
     }
 }
@@ -241,10 +242,15 @@ int main(){
     Plotter plotter;
 
     // Read from .h file
-    int numContours = coordData::numContours;
+    int numContours = coordData.numContours;
     for(int i=0; i<numContours; i++){
         plotter.lift_pen_up();
-        plotter.move_path({coordData::coords[i][0][0], coordData::coords[i][0][1]});
+        Point p;
+        // static_cast<float> converts double coordinates (from header file)
+        // into floats x and y for the struct
+        p.x = static_cast<float>(coordData.coords[i][0][0]);
+        p.y = static_cast<float>(coordData.coords[i][0][1]);
+        plotter.move_path(&p);
         plotter.lower_pen_down();
         draw_contour(i, plotter);
     }
