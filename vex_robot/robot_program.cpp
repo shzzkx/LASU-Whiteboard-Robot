@@ -79,6 +79,13 @@ const float MAX_WIDTH = 2322;
 const float DEG_POS1 = 0; //deg
 const float DEG_POS2 = 40; //Pen down position
 
+// Start function
+void configureAllSensors(){
+  BrainInertial.calibrate();
+  while(BrainInertial.isCalibrating()){}
+  Brain.Screen.setCursor(1,1);
+}
+
 struct Point
 {
     float x;
@@ -219,9 +226,9 @@ class Plotter
 
 };
 
-Plotter::~Plotter()
-{
-}
+// Plotter::~Plotter()
+// {
+// }
 
 
 void draw_contour(int contour_number, Plotter &plotter){
@@ -240,6 +247,12 @@ int main(){
     // initialize
     Plotter plotter;
 
+    //Start up
+    configureAllSensors();
+    Brain.Screen.print("Press check to start program");
+    while(!Brain.buttonCheck.pressing()){}
+    while(Brain.buttonCheck.pressing()){}
+
     // Read from .h file
     int numContours = coordData::numContours;
     for(int i=0; i<numContours; i++){
@@ -249,5 +262,6 @@ int main(){
         draw_contour(i, plotter);
     }
 
-    
+    // e stop
+    Brain.programStop();
 }
