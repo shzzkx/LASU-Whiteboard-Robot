@@ -98,6 +98,7 @@ struct Rope{
     float rright;
 };
 
+
 Rope xy_to_length(Point* point){
     // Check if x, y is out of range
     if(point == nullptr){
@@ -269,5 +270,7 @@ int main(){
     }
 
     // e stop
+    while(!Controller.ButtonEDown.pressing()){}
+    while(Controller.ButtonEDown.pressing()){}
     Brain.programStop();
 }
