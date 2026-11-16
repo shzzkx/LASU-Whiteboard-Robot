@@ -87,6 +87,12 @@ void configureAllSensors(){
   Brain.Screen.setCursor(1,1);
 }
 
+void displayText(int rows, int col, char text[]){
+  Brain.Screen.clearScreen(); 
+  Brain.Screen.setCursor(rows, col); 
+  Brain.Screen.print(text); 
+}
+
 struct Point
 {
     float x;
@@ -100,14 +106,11 @@ struct Rope{
 
 
 Rope xy_to_length(const Point& point){
-    // Check if x, y is out of range
-    // if(point == nullptr){
-    //     return Rope{};
-    // }
+
     Rope new_length{};
 
-    float x = point->x;
-    float y = point->y;
+    float x = point.x;
+    float y = point.y;
 
     new_length.rleft = sqrt(x*x+y*y);
 
@@ -136,22 +139,26 @@ class Plotter
             current_point = {x,y};
             pen_up = pen;
         }
-
         ~Plotter();
-        bool out_of_range(Point* dist){
-            if(dist->x > MAX_LENGTH || dist->y > MAX_WIDTH){
-                //throw error
+
+        void set_point_x(float x1){
+            current_point.x = x1;
+        }
+
+        void set_point_y(float y1){
+            current_point.y = y1;
+        }
+
+        bool out_of_range(const Point& dist){
+            if(dist.x < 0 || dist.y < 0 || dist.x > MAX_LENGTH || dist.y > MAX_WIDTH){
+                displayText(1,1, "Input Out of Range");
                 return true;
             }
             return false;
         }
-        void move_point_to_point (Point* destination){
-            // float x_diff = point2->x - point1->x;
-            // float y_diff = point2->y - point1->y;
 
-            if(out_of_range(destination) || destination == nullptr){
-                //output error
-            }
+        void move_point_to_point (const Point& destination){
+
             Rope new_rope = xy_to_length(destination);
             Rope current_rope = xy_to_length(&current_point);
 
@@ -190,14 +197,11 @@ class Plotter
             leftMotor.stop();
         }
 
-        void move_path(Point* destination)
+        void move_path(const Point& destination)
         {
             
-            if(out_of_range(destination) || destination == nullptr){
-                //output error
-            }
-            float delta_x = current_point.x - destination->x;
-            float delta_y = current_point.y - destination->y;
+            float delta_x = current_point.x - destination.x;
+            float delta_y = current_point.y - destination.y;
             float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
 
             float num_steps = sqrt(delta_x*delta_x + delta_y*delta_y) / STEP_DIST;
@@ -208,6 +212,8 @@ class Plotter
                 nextPoint.y = current_point.y + i*STEP_DIST/hype_length*delta_y;
                 move_point_to_point(&nextPoint);
             }
+            string text = "Moved to " +  destination.x " , " + destination.y;
+            displayText(1,1, text);
         }
 
 
@@ -216,6 +222,7 @@ class Plotter
                 penMotor.spin(reverse, 20, percent);
                 while(penMotor.position(degrees)>DEG_POS1){}
                 penMotor.stop(brake);
+                pen_up = true;
             }
         }
         void lower_pen_down(){
@@ -223,14 +230,12 @@ class Plotter
                 penMotor.spin(forward, 20, percent);
                 while(penMotor.position(degrees)<DEG_POS2){}
                 penMotor.stop(brake);
+                pen_up = false;
             }
         }
 
 };
 
-// Plotter::~Plotter()
-// {
-// }
 
 
 void draw_contour(int contour_number, Plotter &plotter){
