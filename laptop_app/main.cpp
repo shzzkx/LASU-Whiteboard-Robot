@@ -1,3 +1,7 @@
+/* TO RUN PROGRAM FROM laptop_app:
+        .\build\Release\image_to_paths.exe
+*/
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/geometry/2d.hpp>
 #include <iostream>
@@ -22,28 +26,31 @@ WARNING ERROR CODES
 
 /*
 IMAGE SPECIFICATIONS
-- Image must be black and white (or grayscale).
-- Image cannot be a png.
+- Image must be a png.
+- Does not need to be grayscale since program converts to grayscale;
+  however, needs to have high constrast between colors.
 */
 
 int main()
 {
-    // B1: Load the input image.
-    cv::Mat image = cv::imread("../drawings/square_drawing.png");
+    // Load image from drawings folder.
+    /* SQUARE DRAWING */ std::string image_path = "../drawings/square_drawing.png";
+    // STAR DRAWING std::string image_path = "../drawings/star_drawing.jpg";
+    cv::Mat image = cv::imread(image_path);
 
     // TEMP for debugging
     std::cout << "CWD: " << fs::current_path() << '\n';
-    std::string path = "../drawings/square_drawing.png";
-    std::cout << "Exists: " << fs::exists(path) << '\n';
-    std::cout << "Absolute: " << fs::absolute(path) << '\n';
+    std::cout << "Exists: " << fs::exists(image_path) << '\n';
+    std::cout << "Absolute: " << fs::absolute(image_path) << '\n';
+
 
     if (image.empty())
     {
-        std::cerr << "Could not load square_drawing.png\n";
+        std::cerr << "Could not load " << image_path << "\n";
         return 1;
     }
 
-    // B2: Convert color to grayscale.
+    // Convert to grayscale.
     cv::Mat gray;
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
@@ -84,7 +91,7 @@ int main()
 
     // Increasing epsilon will simplify the contour more.
     // This is an opencv thing.
-    const double epsilon = 2.0;
+    const double epsilon = 2.5;
 
     const int MAX_CONTOURS = 5; // Maximum # of contours (shapes) per drawing.
                                 // E.g. Image of square will have one contour,
@@ -151,7 +158,7 @@ int main()
 
     // Write into header file!
     std::ofstream fileWriter;
-    fileWriter.open("../vex_robot/drawing_data.h");
+    fileWriter.open("../vex_robot/include/drawing_data.h");
 
     // Check if file opened.
     if (!fileWriter.is_open())
