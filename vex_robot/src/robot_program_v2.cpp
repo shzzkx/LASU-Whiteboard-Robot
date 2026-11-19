@@ -83,6 +83,7 @@ void configureAllSensors(){
   BrainInertial.calibrate();
   while(BrainInertial.isCalibrating()){}
   Brain.Screen.setCursor(1,1);
+
 }
 
 
@@ -230,59 +231,72 @@ class Plotter
             Rope new_rope = xy_to_length(destination);
             Rope current_rope = xy_to_length(current_point);
 
-            float r_left_value = new_rope.rleft;
-            float r_right_value = new_rope.rright;
+            float left_deg = dist_to_deg(new_rope.rleft - current_rope.rleft);
+            float right_deg = dist_to_deg(new_rope.rright - current_rope.rright);
+        
+            //check if max > 0.1?
 
-            float delta_left = new_rope.rleft - current_rope.rleft;
-            float delta_right = new_rope.rright - current_rope.rright;
-            // int numsteps = 1000;
-
-            float slope = delta_left / delta_right;
-            int percent_speed = 20;
+            float big = fmax(fabs(left_deg), fabs(right_deg));
+            const float BASE_SPEED = 20;   // percent
+            float speed_left = BASE_SPEED * fabs(left_deg) / big;
+            float speed_right = BASE_SPEED * fabs(right_deg) / big;
 
             //convert length to degrees
-            float left_deg = dist_to_deg(r_left_value);
-            float right_deg = dist_to_deg(r_right_value);
+            double startL = leftMotor.position(degrees);
+            double startR = rightMotor.position(degrees);
 
-            if(delta_left>0){
-                leftMotor.spin(forward, slope*percent_speed, percent);
-            }else{
-                leftMotor.spin(reverse, slope*percent_speed, percent);
+            bool leftDone  = (fabs(left_deg) < 0.1);
+            bool rightDone = (fabs(right_deg) < 0.1);
+
+            if(!leftDone){
+                if(left_deg>0){
+                    leftMotor.spin(forward, speed_left, percent);
+                }else{
+                    leftMotor.spin(reverse, speed_left, percent);
+                }
             }
 
-            if(delta_right>0){
-                rightMotor.spin(forward, percent_speed, percent);
-            }else{
-                rightMotor.spin(reverse, percent_speed, percent);
+            if(!rightDone){
+                if(right_deg>0){
+                    rightMotor.spin(forward, speed_right, percent);
+                }else{
+                    rightMotor.spin(reverse, speed_right, percent);
+                }
             }
 
-            if(delta_left > delta_right){
-                while(fabs(leftMotor.position(degrees)-left_deg) > 10){}
-            }else{
-                while(fabs(rightMotor.position(degrees)-right_deg) > 10){}
+            while (!leftDone || !rightDone) {
+                if (!leftDone && fabs(leftMotor.position(degrees) - startL) >= fabs(left_deg)) {
+                    leftMotor.stop();
+                    leftDone = true;
+                }
+                if (!rightDone && fabs(rightMotor.position(degrees) - startR) >= fabs(right_deg)) {
+                    rightMotor.stop();
+                    rightDone = true;
+                }
+                wait(5, msec);
             }
-            rightMotor.stop();
-            leftMotor.stop();
 
             current_point = destination;
         }
 
         void move_path(const Point& destination)
         {
-            
-            float delta_x = current_point.x - destination.x;
-            float delta_y = current_point.y - destination.y;
-            float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
+            if(!out_of_range(destination)){
+                float delta_x = destination.x - current_point.x;
+                float delta_y = destination.y - current_point.y;
+                float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
 
-            float num_steps = hype_length / STEP_DIST;
-            
-            Point nextPoint;
-            for(int i=1; i<= num_steps; i++){
-                nextPoint.x = current_point.x+i*STEP_DIST/hype_length*delta_x;
-                nextPoint.y = current_point.y + i*STEP_DIST/hype_length*delta_y;
-                move_point_to_point(nextPoint);
+                int num_steps = (int)ceil(hype_length / STEP_DIST);
+                
+                Point start = current_point;
+                Point nextPoint;
+                for(int i=1; i<= num_steps; i++){
+                    nextPoint.x = start.x+i*STEP_DIST/hype_length*delta_x;
+                    nextPoint.y = start.y + i*STEP_DIST/hype_length*delta_y;
+                    move_point_to_point(nextPoint);
+                }
+                Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
             }
-            Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
         }
 
 };
@@ -292,7 +306,7 @@ class Plotter
 void draw_contour(int contour_number, Plotter &plotter){
     int num_coord = coordData.numCoords[contour_number];
     Point point;
-    for(int i=1; i<=num_coord; i++){
+    for(int i=1; i<num_coord; i++){
       point.x = coordData.coords[contour_number][i][0];
       point.y = coordData.coords[contour_number][i][1];
       plotter.move_path(point);
@@ -307,7 +321,7 @@ int main(){
 
     // initialize
     Plotter plotter;
-    bool& pen_up = true;
+    bool pen_up = true;
     bool isRemoteControl;
 
     //Start up
@@ -318,6 +332,7 @@ int main(){
     Brain.Screen.newLine();
     Brain.Screen.print("Press the X button to enter remote control mode");
 
+    while(!Brain.buttonCheck.pressing() && !Brain.buttonX.pressing()){}
     if (Brain.buttonCheck.pressing()) {
         isRemoteControl = false;
     } else if (Brain.buttonX.pressing()) {
