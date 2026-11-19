@@ -78,8 +78,8 @@ const float RADIUS = 20.0; // cm
 const float STEP_DIST = 1.0; // cm
 const float MAX_LENGTH = 4232;
 const float MAX_WIDTH = 2322;
-const float DEG_POS1 = 0; //deg
-const float DEG_POS2 = 40; //Pen down position
+const float DEG_POS1 = 90; //deg
+const float DEG_POS2 = -90; //Pen down position
 
 // Start function
 void configureAllSensors(){
@@ -88,11 +88,6 @@ void configureAllSensors(){
   Brain.Screen.setCursor(1,1);
 }
 
-void displayText(int rows, int col, char text[]){
-  Brain.Screen.clearScreen(); 
-  Brain.Screen.setCursor(rows, col); 
-  Brain.Screen.print(text); 
-}
 
 struct Point
 {
@@ -125,11 +120,89 @@ float dist_to_deg(float dist){
     return dist*360/(2*3.14*RADIUS);
 }
 
+void lift_pen_up(bool& pen_up){
+    if(pen_up == false){
+        penMotor.spin(reverse, 20, percent);
+        while(penMotor.position(degrees)>DEG_POS1){}
+        penMotor.stop(brake);
+        pen_up = true;
+    }
+}
+void lower_pen_down(bool& pen_up){
+    if(pen_up == true){
+        penMotor.spin(forward, 20, percent);
+        while(penMotor.position(degrees)<DEG_POS2){}
+        penMotor.stop(brake);
+        pen_up = false;
+    }
+}
+
+void remote_control(bool& pen_up) {  
+
+  double vLeft = 30;
+  double vRight = 30;
+  const double step = 1;   // percent changed per loop while a button is held
+
+  // Holds position when stopped.
+  leftMotor.setStopping(hold);
+  rightMotor.setStopping(hold);
+  penMotor.setStopping(hold);  
+
+  for (;;) {
+    // Pen up or down
+    if (Controller.ButtonFDown.pressing()) {
+      penDown(pen_up);
+    }
+    if (Controller.ButtonFUp.pressing()) {
+      penUp(pen_up);
+    }
+
+    // Left motor speed
+    if (Controller.ButtonLUp.pressing()) {
+      vLeft = fmin(vLeft + step, 100);
+    }
+    if (Controller.ButtonLDown.pressing()) {
+      vLeft = fmax(vLeft - step, -100);
+    }
+
+    // Right motor speed
+    if (Controller.ButtonRUp.pressing()) {
+      vRight = fmin(vRight + step, 100);
+    }
+    if (Controller.ButtonRDown.pressing()) {
+      vRight = fmax(vRight - step, -100);
+    }
+
+    // Drive
+    if (Controller.ButtonEUp.pressing()) {
+      leftMotor.spin(forward, vLeft, percent);
+      rightMotor.spin(forward, vRight, percent);
+    } else if (Controller.ButtonEDown.pressing()) {
+      leftMotor.spin(reverse, vLeft, percent);
+      rightMotor.spin(reverse, vRight, percent);
+    } else {
+      leftMotor.stop();
+      rightMotor.stop();
+    }
+
+    print(vLeft, vRight);
+    Brain.Screen.clearLine(1);
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
+
+    wait(50, msec);
+
+    // TODO: Change button
+    if (Controller.ButtonEUp.pressing())
+      Brain.programStop();
+  }
+}
+
+
 class Plotter
 {
     private:
         Point current_point{};
-        bool pen_up;
 
     public:
         Plotter(){
@@ -217,24 +290,6 @@ class Plotter
             displayText(1,1, text);
         }
 
-
-        void lift_pen_up(){
-            if(pen_up == false){
-                penMotor.spin(reverse, 20, percent);
-                while(penMotor.position(degrees)>DEG_POS1){}
-                penMotor.stop(brake);
-                pen_up = true;
-            }
-        }
-        void lower_pen_down(){
-            if(pen_up == true){
-                penMotor.spin(forward, 20, percent);
-                while(penMotor.position(degrees)<DEG_POS2){}
-                penMotor.stop(brake);
-                pen_up = false;
-            }
-        }
-
 };
 
 
@@ -258,15 +313,25 @@ int main(){
 
     //Start up
     configureAllSensors();
-    Brain.Screen.print("Press check to start program");
-    while(!Brain.buttonCheck.pressing()){}
-    while(Brain.buttonCheck.pressing()){}
+    Brain.Screen.clearScreen();
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("Press the check button to start drawing");
+    Brain.Screen.newLine();
+    Brain.Screen.print("Press the X button to enter remote control mode");
 
-    // Read from .h file
-    int numContours = coordData.numContours;
-    for(int i=0; i<numContours; i++){
-        // TODO: Fix this condition
-        if(!(Controller.ButtonFDown.pressing() || Controller.ButtonFDown.pressing()))
+    if (Brain.buttonCheck.pressing()) {
+        isRemoteControl = false;
+    } else if (Brain.buttonX.pressing()) {
+        isRemoteControl = true;
+    }
+
+    if(isRemoteControl){
+        remote_control()
+    }else{
+        // Read from .h file
+        int numContours = coordData.numContours;
+        for(int i=0; i<numContours; i++){
+            // TODO: Fix this condition
             plotter.lift_pen_up();
             Point p;
             // static_cast<float> converts double coordinates (from header file)
@@ -276,19 +341,10 @@ int main(){
             plotter.move_path(&p);
             plotter.lower_pen_down();
             draw_contour(i, plotter);
+            if (Controller.ButtonEUp.pressing())
+                Brain.programStop();
         }
-    }
-    while(!Controller.ButtonEDown.pressing()){}
-    if(Controller.ButtonFDown.pressing()){
-        // enable controller control
-    }
-    if(Controller.ButtonFDown.pressing()){
-        while(Controller.ButtonEDown.pressing()){}
-        Brain.programStop();
-    }    
 
     // e stop
-    
-    
     
 }
