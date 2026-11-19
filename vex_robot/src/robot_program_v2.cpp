@@ -68,10 +68,7 @@ void vexcodeInit() {
 //----------------------------------------------------------------------------
 
 // Include the IQ Library
-#include "iq_cpp.h"
-
-// Allows for easier use of the VEX Library
-using namespace vex;
+#include "iq_cpp.h" // repetitive?
 
 const float GAP_DIST = 5.0; // cm
 const float RADIUS = 20.0; // cm
@@ -151,10 +148,10 @@ void remote_control(bool& pen_up) {
   for (;;) {
     // Pen up or down
     if (Controller.ButtonFDown.pressing()) {
-      penDown(pen_up);
+      lower_pen_down(pen_up);
     }
     if (Controller.ButtonFUp.pressing()) {
-      penUp(pen_up);
+      lift_pen_up(pen_up);
     }
 
     // Left motor speed
@@ -185,7 +182,6 @@ void remote_control(bool& pen_up) {
       rightMotor.stop();
     }
 
-    print(vLeft, vRight);
     Brain.Screen.clearLine(1);
     Brain.Screen.setCursor(1, 1);
     Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
@@ -207,13 +203,11 @@ class Plotter
     public:
         Plotter(){
             current_point = {0,0};
-            pen_up = true;
         }
         Plotter(float x, float y, bool pen){
             current_point = {x,y};
-            pen_up = pen;
         }
-        ~Plotter();
+        // ~Plotter();
 
         void set_point_x(float x1){
             current_point.x = x1;
@@ -225,7 +219,7 @@ class Plotter
 
         bool out_of_range(const Point& dist){
             if(dist.x < 0 || dist.y < 0 || dist.x > MAX_LENGTH || dist.y > MAX_WIDTH){
-                displayText(1,1, "Input Out of Range");
+                Brain.Screen.print("Input Out of Range");
                 return true;
             }
             return false;
@@ -234,13 +228,13 @@ class Plotter
         void move_point_to_point (const Point& destination){
 
             Rope new_rope = xy_to_length(destination);
-            Rope current_rope = xy_to_length(&current_point);
+            Rope current_rope = xy_to_length(current_point);
 
             float r_left_value = new_rope.rleft;
             float r_right_value = new_rope.rright;
 
-            float delta_left = current_rope.rleft - new_rope.rleft;
-            float delta_right = current_rope.rright - new_rope.rright;
+            float delta_left = new_rope.rleft - current_rope.rleft;
+            float delta_right = new_rope.rright - current_rope.rright;
             // int numsteps = 1000;
 
             float slope = delta_left / delta_right;
@@ -269,6 +263,8 @@ class Plotter
             }
             rightMotor.stop();
             leftMotor.stop();
+
+            current_point = destination;
         }
 
         void move_path(const Point& destination)
@@ -278,16 +274,15 @@ class Plotter
             float delta_y = current_point.y - destination.y;
             float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
 
-            float num_steps = sqrt(delta_x*delta_x + delta_y*delta_y) / STEP_DIST;
+            float num_steps = hype_length / STEP_DIST;
             
             Point nextPoint;
             for(int i=1; i<= num_steps; i++){
                 nextPoint.x = current_point.x+i*STEP_DIST/hype_length*delta_x;
                 nextPoint.y = current_point.y + i*STEP_DIST/hype_length*delta_y;
-                move_point_to_point(&nextPoint);
+                move_point_to_point(nextPoint);
             }
-            string text = "Moved to " +  destination.x " , " + destination.y;
-            displayText(1,1, text);
+            Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
         }
 
 };
@@ -300,7 +295,7 @@ void draw_contour(int contour_number, Plotter &plotter){
     for(int i=1; i<=num_coord; i++){
       point.x = coordData.coords[contour_number][i][0];
       point.y = coordData.coords[contour_number][i][1];
-      plotter.move_path(&point);
+      plotter.move_path(point);
     }
 }
 
@@ -308,8 +303,12 @@ void draw_contour(int contour_number, Plotter &plotter){
 // Button for controller control
 int main(){
 
+    vexcodeInit();
+
     // initialize
     Plotter plotter;
+    bool& pen_up = true;
+    bool isRemoteControl;
 
     //Start up
     configureAllSensors();
@@ -326,25 +325,25 @@ int main(){
     }
 
     if(isRemoteControl){
-        remote_control()
+        remote_control(pen_up);
     }else{
         // Read from .h file
         int numContours = coordData.numContours;
         for(int i=0; i<numContours; i++){
             // TODO: Fix this condition
-            plotter.lift_pen_up();
+            lift_pen_up(pen_up);
             Point p;
             // static_cast<float> converts double coordinates (from header file)
             // into floats x and y for the struct
             p.x = static_cast<float>(coordData.coords[i][0][0]);
             p.y = static_cast<float>(coordData.coords[i][0][1]);
-            plotter.move_path(&p);
-            plotter.lower_pen_down();
+            plotter.move_path(p);
+            lower_pen_down(pen_up);
             draw_contour(i, plotter);
-            if (Controller.ButtonEUp.pressing())
+            if (Controller.ButtonEUp.pressing()) // TODO: Change button bindings
                 Brain.programStop();
         }
-
+    }
     // e stop
     
 }
