@@ -79,10 +79,9 @@ int main()
     cv::drawContours(debug, contours, -1, cv::Scalar(0, 0, 255), 2);
     cv::imwrite("debug_contours.png", debug);
 
-    // Example whiteboard area: 300 mm (width) x 200 mm (height).
-    // TODO: Replace with actual whiteboard area dimensions.
-    const double boardWidth_mm = 300.0;
-    const double boardHeight_mm = 200.0;
+    // Whiteboard area: 1210 mm (width) x 1210 mm (desired height).
+    const double boardWidth_mm = 1210.0;
+    const double boardHeight_mm = 1210.0;
 
     // Scale factor is based on whichever axis runs out of drawing space first.
     // This preserves aspect ratio.
