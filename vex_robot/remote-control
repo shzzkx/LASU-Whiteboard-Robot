@@ -66,20 +66,41 @@ bool RemoteControlCodeEnabled = true;
 using namespace vex;
 
 bool penIsDown = false;
+bool isRunning = true;
 
+//NON-TRIVIAL FUNCTION 1: pen up and down
 void penDown() {
   if (!penIsDown) {
     penMotor.spinFor(reverse, 90, degrees);
     penIsDown = true;
   }
 }
-
-
 void penUp() {
   if (penIsDown) {
     penMotor.spinFor(forward, 90, degrees);
     penIsDown = false;
   }
+}
+
+// NON-TRIVIAL FUNCTION 2: EMERGENCY STOP(TOUCH LED)?
+void StopToggle() {
+  if (touchLed.pressing()){
+    if(isRunning) {
+      // stop the program
+    }
+    else {
+      // resume the program
+
+    }
+    isrunning = !isrunning
+  }
+}
+
+// NON-TRIVIAL FUNCTION 3: Shoe velocity on the screen
+void print(vLeft, vRight) {
+  Brain.Screen.clearLine(1);
+  Brain.Screen.setCursor(1, 1);
+  Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
 }
 
 /* Controls
@@ -146,9 +167,8 @@ int main() {
     }
 
     // current speeds on brain screen
-    Brain.Screen.clearLine(1);
-    Brain.Screen.setCursor(1, 1);
-    Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
+    print(vLeft, vRight);
+
     if (Brain.buttonCheck.pressing()) {
       Brain.programStop();
     }

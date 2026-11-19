@@ -2,5 +2,6 @@
     "cmake.configureOnOpen": false,
     "cmake.autoSelectActiveFolder": false,
     "cmake.sourceDirectory": "${workspaceFolder}/laptop_app",
-    "cmake.buildDirectory": "${workspaceFolder}/laptop_app/build"
+    "cmake.buildDirectory": "${workspaceFolder}/laptop_app/build",
+    "C_Cpp.default.compilerPath": "D:/Code/download/ucrt64/bin/gcc.exe"
 }

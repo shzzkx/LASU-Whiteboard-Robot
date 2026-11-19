@@ -32,6 +32,7 @@ inertial BrainInertial = inertial();
 motor rightMotor = motor(PORT7, false);
 motor leftMotor = motor(PORT12, false);
 motor penMotor = motor(PORT8, false);
+controller Controller = controller();
 
 // generating and setting random seed
 void initializeRandomSeed(){
@@ -248,7 +249,8 @@ void draw_contour(int contour_number, Plotter &plotter){
     }
 }
 
-
+// Button for E-stop
+// Button for controller control
 int main(){
 
     // initialize
@@ -263,19 +265,30 @@ int main(){
     // Read from .h file
     int numContours = coordData.numContours;
     for(int i=0; i<numContours; i++){
-        plotter.lift_pen_up();
-        Point p;
-        // static_cast<float> converts double coordinates (from header file)
-        // into floats x and y for the struct
-        p.x = static_cast<float>(coordData.coords[i][0][0]);
-        p.y = static_cast<float>(coordData.coords[i][0][1]);
-        plotter.move_path(&p);
-        plotter.lower_pen_down();
-        draw_contour(i, plotter);
+        // TODO: Fix this condition
+        if(!(Controller.ButtonFDown.pressing() || Controller.ButtonFDown.pressing()))
+            plotter.lift_pen_up();
+            Point p;
+            // static_cast<float> converts double coordinates (from header file)
+            // into floats x and y for the struct
+            p.x = static_cast<float>(coordData.coords[i][0][0]);
+            p.y = static_cast<float>(coordData.coords[i][0][1]);
+            plotter.move_path(&p);
+            plotter.lower_pen_down();
+            draw_contour(i, plotter);
+        }
     }
+    while(!Controller.ButtonEDown.pressing()){}
+    if(Controller.ButtonFDown.pressing()){
+        // enable controller control
+    }
+    if(Controller.ButtonFDown.pressing()){
+        while(Controller.ButtonEDown.pressing()){}
+        Brain.programStop();
+    }    
 
     // e stop
-    while(!Controller.ButtonEDown.pressing()){}
-    while(Controller.ButtonEDown.pressing()){}
-    Brain.programStop();
+    
+    
+    
 }
