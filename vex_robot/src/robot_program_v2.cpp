@@ -6,9 +6,10 @@
 #include <math.h>
 #include <string.h>
 
+// #include "drawing_data.h"
+
 
 #include "vex.h"
-#include "drawing_data.h"
 
 using namespace vex;
 
@@ -68,7 +69,34 @@ void vexcodeInit() {
 //----------------------------------------------------------------------------
 
 // Include the IQ Library
-#include "iq_cpp.h" // repetitive?
+#include "iq_cpp.h"
+
+// Allows for easier use of the VEX Library
+using namespace vex;
+
+#define MAX_CONTOURS 5
+
+#define MAX_COORDS 30
+
+typedef struct {
+    int numContours;
+    int numCoords[MAX_CONTOURS];
+    double coords[MAX_CONTOURS][MAX_COORDS][2];
+} CoordData;
+
+static const CoordData coordData = {
+    1,
+    { 5, },
+    {
+        {
+            {197.75, 36.29},
+            {69.20, 36.57},
+            {69.20, 165.68},
+            {198.03, 165.68},
+            {197.75, 36.29},
+        },
+    }
+};
 
 const float GAP_DIST = 5.0; // cm
 const float RADIUS = 20.0; // cm
@@ -332,10 +360,10 @@ int main(){
     Brain.Screen.newLine();
     Brain.Screen.print("Press the X button to enter remote control mode");
 
-    while(!Brain.buttonCheck.pressing() && !Brain.buttonX.pressing()){}
-    if (Brain.buttonCheck.pressing()) {
+    while(!Brain.buttonUp.pressing() && !Brain.buttonDown.pressing()){}
+    if (Brain.buttonUp.pressing()) {
         isRemoteControl = false;
-    } else if (Brain.buttonX.pressing()) {
+    } else if (Brain.buttonDown.pressing()) {
         isRemoteControl = true;
     }
 
@@ -358,6 +386,7 @@ int main(){
             if (Controller.ButtonEUp.pressing()) // TODO: Change button bindings
                 Brain.programStop();
         }
+        Brain.programStop();
     }
     // e stop
     
