@@ -9,6 +9,7 @@
 // #include "drawing_data.h"
 
 
+
 #include "vex.h"
 
 using namespace vex;
@@ -34,6 +35,7 @@ motor rightMotor = motor(PORT7, false);
 motor leftMotor = motor(PORT12, false);
 motor penMotor = motor(PORT8, false);
 controller Controller = controller();
+
 
 // generating and setting random seed
 void initializeRandomSeed(){
@@ -98,9 +100,9 @@ static const CoordData coordData = {
     }
 };
 
-const float GAP_DIST = 5.0; // cm
+const float GAP_DIST = 7.5; // cm
 const float RADIUS = 20.0; // cm
-const float STEP_DIST = 1.0; // cm
+const float STEP_DIST = 2.0; // cm
 const float MAX_LENGTH = 4232;
 const float MAX_WIDTH = 2322;
 const float DEG_POS1 = 90; //deg
@@ -143,7 +145,7 @@ Rope xy_to_length(const Point& point){
 
 
 float dist_to_deg(float dist){
-    return dist*360/(2*3.14*RADIUS);
+    return dist*360/(6.0);
 }
 
 void lift_pen_up(bool& pen_up){
@@ -170,9 +172,7 @@ void remote_control(bool& pen_up) {
   const double step = 1;   // percent changed per loop while a button is held
 
   // Holds position when stopped.
-  leftMotor.setStopping(hold);
-  rightMotor.setStopping(hold);
-  penMotor.setStopping(hold);  
+  
 
   for (;;) {
     // Pen up or down
@@ -217,9 +217,9 @@ void remote_control(bool& pen_up) {
 
     wait(50, msec);
 
-    // TODO: Change button
-    if (Controller.ButtonEUp.pressing())
-      Brain.programStop();
+    // // TODO: Change button
+    // if (Controller.ButtonEUp.pressing())
+    //   Brain.programStop();
   }
 }
 
@@ -233,7 +233,7 @@ class Plotter
         Plotter(){
             current_point = {0,0};
         }
-        Plotter(float x, float y, bool pen){
+        Plotter(float x, float y){
             current_point = {x,y};
         }
         // ~Plotter();
@@ -258,7 +258,7 @@ class Plotter
 
             Rope new_rope = xy_to_length(destination);
             Rope current_rope = xy_to_length(current_point);
-
+            
             float left_deg = dist_to_deg(new_rope.rleft - current_rope.rleft);
             float right_deg = dist_to_deg(new_rope.rright - current_rope.rright);
         
@@ -341,6 +341,24 @@ void draw_contour(int contour_number, Plotter &plotter){
     }
 }
 
+void vector_path(bool& pen_up, Plotter& plotter){
+  int numContours = coordData.numContours;
+  for(int i=0; i<numContours; i++){
+      // TODO: Fix this condition
+      lift_pen_up(pen_up);
+      Point p;
+      // static_cast<float> converts double coordinates (from header file)
+      // into floats x and y for the struct
+      p.x = static_cast<float>(coordData.coords[i][0][0]);
+      p.y = static_cast<float>(coordData.coords[i][0][1]);
+      plotter.move_path(p);
+      lower_pen_down(pen_up);
+      draw_contour(i, plotter);
+      if (Controller.ButtonEUp.pressing()) // TODO: Change button bindings
+          Brain.programStop();
+  }
+}
+
 // Button for E-stop
 // Button for controller control
 int main(){
@@ -348,9 +366,12 @@ int main(){
     vexcodeInit();
 
     // initialize
-    Plotter plotter;
     bool pen_up = true;
     bool isRemoteControl;
+
+    leftMotor.setStopping(hold);
+    rightMotor.setStopping(hold);
+    penMotor.setStopping(hold);  
 
     //Start up
     configureAllSensors();
@@ -370,22 +391,10 @@ int main(){
     if(isRemoteControl){
         remote_control(pen_up);
     }else{
-        // Read from .h file
-        int numContours = coordData.numContours;
-        for(int i=0; i<numContours; i++){
-            // TODO: Fix this condition
-            lift_pen_up(pen_up);
-            Point p;
-            // static_cast<float> converts double coordinates (from header file)
-            // into floats x and y for the struct
-            p.x = static_cast<float>(coordData.coords[i][0][0]);
-            p.y = static_cast<float>(coordData.coords[i][0][1]);
-            plotter.move_path(p);
-            lower_pen_down(pen_up);
-            draw_contour(i, plotter);
-            if (Controller.ButtonEUp.pressing()) // TODO: Change button bindings
-                Brain.programStop();
-        }
+        Plotter plotter(0,0);
+        Point p{-10,0};
+        plotter.move_point_to_point(p);
+        // vector_path(pen_up, plotter);
         Brain.programStop();
     }
     // e stop
