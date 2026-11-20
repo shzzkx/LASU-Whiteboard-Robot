@@ -102,9 +102,9 @@ static const CoordData coordData = {
 
 const float GAP_DIST = 7.5; // cm
 const float RADIUS = 20.0; // cm
-const float STEP_DIST = 2.0; // cm
-const float MAX_LENGTH = 4232;
-const float MAX_WIDTH = 2322;
+const float STEP_DIST = 5.0; // cm
+const float MAX_X = 116;
+const float MAX_Y = 86;
 const float DEG_POS1 = 90; //deg
 const float DEG_POS2 = -90; //Pen down position
 
@@ -138,7 +138,7 @@ Rope xy_to_length(const Point& point){
 
     new_length.rleft = sqrt(x*x+y*y);
 
-    new_length.rright = sqrt((GAP_DIST - x)*(GAP_DIST-x)+y*y);
+    new_length.rright = sqrt((MAX_X - GAP_DIST - x)*(MAX_X - GAP_DIST-x)+y*y);
 
     return new_length;
 }
@@ -201,11 +201,11 @@ void remote_control(bool& pen_up) {
 
     // Drive
     if (Controller.ButtonEUp.pressing()) {
-      leftMotor.spin(forward, vLeft, percent);
-      rightMotor.spin(forward, vRight, percent);
+      leftMotor.spin(forward, vRight, percent);
+      rightMotor.spin(forward,vLeft , percent);
     } else if (Controller.ButtonEDown.pressing()) {
-      leftMotor.spin(reverse, vLeft, percent);
-      rightMotor.spin(reverse, vRight, percent);
+      leftMotor.spin(reverse,vRight , percent);
+      rightMotor.spin(reverse, vLeft, percent);
     } else {
       leftMotor.stop();
       rightMotor.stop();
@@ -247,7 +247,7 @@ class Plotter
         }
 
         bool out_of_range(const Point& dist){
-            if(dist.x < 0 || dist.y < 0 || dist.x > MAX_LENGTH || dist.y > MAX_WIDTH){
+            if(dist.x < 0 || dist.y < 0 || dist.x > MAX_X || dist.y > MAX_Y){
                 Brain.Screen.print("Input Out of Range");
                 return true;
             }
@@ -294,11 +294,11 @@ class Plotter
 
             while (!leftDone || !rightDone) {
                 if (!leftDone && fabs(leftMotor.position(degrees) - startL) >= fabs(left_deg)) {
-                    leftMotor.stop();
+                    leftMotor.stop(brake);
                     leftDone = true;
                 }
                 if (!rightDone && fabs(rightMotor.position(degrees) - startR) >= fabs(right_deg)) {
-                    rightMotor.stop();
+                    rightMotor.stop(brake);
                     rightDone = true;
                 }
                 wait(5, msec);
@@ -391,9 +391,14 @@ int main(){
     if(isRemoteControl){
         remote_control(pen_up);
     }else{
-        Plotter plotter(0,0);
-        Point p{-10,0};
+        Plotter plotter(52, 86);
+        Point p{52, 46};
         plotter.move_point_to_point(p);
+
+        Point p2{82, 48};
+        plotter.move_path(p2);
+        // plotter.move_point_to_point(p2);
+
         // vector_path(pen_up, plotter);
         Brain.programStop();
     }
