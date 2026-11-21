@@ -34,7 +34,7 @@ IMAGE SPECIFICATIONS
 int main()
 {
     // Load image from drawings folder.
-    /* SQUARE DRAWING */ std::string image_path = "../drawings/square_drawing.png";
+    /* SQUARE DRAWING */ std::string image_path = "../drawings/star_drawing.jpg";
     // STAR DRAWING std::string image_path = "../drawings/star_drawing.jpg";
     cv::Mat image = cv::imread(image_path);
 
@@ -80,8 +80,8 @@ int main()
     cv::imwrite("debug_contours.png", debug);
 
     // Whiteboard area: 1210 mm (width) x 1210 mm (desired height).
-    const double boardWidth_mm = 1210.0;
-    const double boardHeight_mm = 1210.0;
+    const double boardWidth_mm = 1160.0;
+    const double boardHeight_mm = 860.0;
 
     // Scale factor is based on whichever axis runs out of drawing space first.
     // This preserves aspect ratio.
@@ -213,8 +213,8 @@ int main()
                 // Scale coords to mm for whiteabord.
                 // NOTE: If we want origin to be in bottom left,
                 // use double y_mm = (image.rows - 1 - coord.y) * scaleY;
-                double x_mm = coord.x * scale;
-                double y_mm = coord.y * scale;
+                double x_mm = coord.x * scale * 0.1;
+                double y_mm = coord.y * scale * 0.1;
 
                 // Write coordinate into array.
                 fileWriter << "            {" << x_mm << ", " << y_mm << "},\n";
@@ -226,8 +226,8 @@ int main()
             }
             // Append the first coordinate to the end
             // so that the robot will draw a closed shape.
-            double x_mm = contour.front().x * scale;
-            double y_mm = contour.front().y * scale;
+            double x_mm = contour.front().x * scale * 0.1;
+            double y_mm = contour.front().y * scale * 0.1;
             fileWriter << "            {" << x_mm << ", " << y_mm << "},\n";
             fileWriter << "        },\n";
         }
