@@ -86,10 +86,13 @@ typedef struct {
 
 
 const float GAP_DIST = 50; 
+// BUG?: units - other lengths are mm. If spool circumference is 6 cm, use 60/(2*3.14).
 const float RADIUS = 6/(2*3.14);
 const float MAX_LENGTH = 860;
 const float ROPE_LENGTH = 1000;
 const float MAX_WIDTH = 520;
+  
+const float MAX_HEIGHT = 860;
 const float DEG_POS1 = 90; 
 const float DEG_POS2 = -90; 
 
@@ -132,8 +135,9 @@ Point length_to_xy(Rope* rope){
     return point;
 }
 
-//get veclotiy form 
-int get_velocity(Point &point, float dx, float dy) {
+
+
+float get_velocity(const Point &point, float dx, float dy) {
     return (1 / sqrt(point.x*point.x + point.y*point.y)) * (point.x*dx + point.y*dy);
 }
 
@@ -143,23 +147,25 @@ float deg_to_dist(float deg){
 
 void lift_pen_up(bool& pen_up){
     if(pen_up == false){
+        //      penMotor.spinToPosition(-90, degrees, 20, velocityUnits::pct, true);
         penMotor.spin(reverse, 20, percent);
-        while(penMotor.position(degrees)>DEG_POS1){}
+        while(penMotor.position(degrees)> -90){}
         penMotor.stop(brake);
         pen_up = true;
     }
 }
 void lower_pen_down(bool& pen_up){
     if(pen_up == true){
+        
         penMotor.spin(forward, 20, percent);
-        while(penMotor.position(degrees)<DEG_POS2){}
+        while(penMotor.position(degrees)<90){}
         penMotor.stop(brake);
         pen_up = false;
     }
 }
 
 bool out_of_range(const Point& dist){
-    if(dist.x < 0 || dist.y < 0 || dist.x > MAX_LENGTH || dist.y > MAX_WIDTH){
+    if(isnan(dist.x) || isnan(dist.y) || dist.x < 0 || dist.y < 0 || dist.x > MAX_WIDTH || dist.y > MAX_HEIGHT) {
         Brain.Screen.setCursor(4, 1);
         Brain.Screen.print("Input Out of Range");
         return true;
@@ -172,7 +178,9 @@ bool out_of_range(const Point& dist){
 int main() {  
     bool pen_up = true;
 
-  // Holds position when stopped.
+  
+  configureAllSensors();
+  // holds poisiton when stopped
   leftMotor.setStopping(hold);
   rightMotor.setStopping(hold);
   penMotor.setStopping(hold);  
@@ -187,7 +195,10 @@ int main() {
     }
 
   float dx = (float) Controller.AxisB.position();
-  float dy = (float) Controller.AxisA.position();
+  
+
+  //  float dy = -(float) Controller.AxisA.position(); -- > ??
+  float dy = - (float) Controller.AxisA.position();
 
 
     if (dx < 5 && dx > -5) {
@@ -199,23 +210,30 @@ int main() {
 
     Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
     //use motor encoders to get current rope length 
-
     current_rope.rleft += deg_to_dist(leftMotor.position(degrees));
     current_rope.rright += deg_to_dist(rightMotor.position(degrees));
 
     Point current_point = length_to_xy(&current_rope);
-    vLeft = get_velocity(current_point, dx, dy);
+    
+    
+    vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
 
-    Point point2 = { MAX_WIDTH - current_point.x,current_point.y };
+    Point point2 = { current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y };
 
     vRight = get_velocity(point2, dx, dy);
 
-    //range check
-    out_of_range(current_point);
-    // Drive
-    if (Controller.ButtonEUp.pressing()) {
+    vLeft = vLeft * 360 / (2 * 3.14 * RADIUS);
+    vRight = vRight * 360 / (2 * 3.14 * RADIUS);
+   
+
+    if (Controller.ButtonEUp.pressing() && !out_of_range(current_point)) {
       leftMotor.spin(forward, vLeft , dps);
       rightMotor.spin(forward, vRight, dps);
+
+   
+    } else if (Controller.ButtonEDown.pressing() && !out_of_range(current_point)) {
+      leftMotor.spin(reverse, vLeft , dps);
+      rightMotor.spin(reverse, vRight, dps);
     } else {
       leftMotor.stop();
       rightMotor.stop();
