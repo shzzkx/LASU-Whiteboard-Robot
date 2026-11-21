@@ -86,15 +86,14 @@ typedef struct {
 
 
 const float GAP_DIST = 50; 
-// BUG?: units - other lengths are mm. If spool circumference is 6 cm, use 60/(2*3.14).
-const float RADIUS = 6/(2*3.14);
-const float MAX_LENGTH = 860;
-const float ROPE_LENGTH = 1000;
-const float MAX_WIDTH = 520;
+const float CF = 60;
+
+const float ROPE_LENGTH = 1020;
+const float MAX_WIDTH = 1020;
   
 const float MAX_HEIGHT = 860;
-const float DEG_POS1 = 90; 
-const float DEG_POS2 = -90; 
+
+
 
 // Start function
 void configureAllSensors(){
@@ -129,20 +128,21 @@ y = √(L1² − (x − s/2)²)
 
 Point length_to_xy(Rope* rope){
     Point point{};
-    float D = MAX_WIDTH - GAP_DIST; // distance between the two motors
+    float D = MAX_WIDTH - GAP_DIST; // distance between the two motors taken away from the coordinate system
     point.x = (rope->rleft*rope->rleft - rope->rright*rope->rright + D*D) / (2*D) + GAP_DIST/2;
     point.y = sqrt(rope->rleft*rope->rleft - (point.x - GAP_DIST/2)*(point.x - GAP_DIST/2));
     return point;
 }
 
 
-
+// luna's formula to convert x and y to velocity
+// dl/dt = 1 / (x^2 + y^2)^(1/2)* (dx/dt *x + dy/dt *y)
 float get_velocity(const Point &point, float dx, float dy) {
     return (1 / sqrt(point.x*point.x + point.y*point.y)) * (point.x*dx + point.y*dy);
 }
 
 float deg_to_dist(float deg){
-    return deg*2*3.14*RADIUS/360;
+    return deg*CF/360;
 }
 
 void lift_pen_up(bool& pen_up){
@@ -158,7 +158,7 @@ void lower_pen_down(bool& pen_up){
     if(pen_up == true){
         
         penMotor.spin(forward, 20, percent);
-        while(penMotor.position(degrees)<90){}
+        while(penMotor.position(degrees)<0){}
         penMotor.stop(brake);
         pen_up = false;
     }
@@ -194,22 +194,14 @@ int main() {
       lift_pen_up(pen_up);
     }
 
-  float dx = (float) Controller.AxisB.position();
-  
-
+  float dx = (float) Controller.AxisB.position() ;
   //  float dy = -(float) Controller.AxisA.position(); -- > ??
-  float dy = - (float) Controller.AxisA.position();
-
-
-    if (dx < 5 && dx > -5) {
-        dx = 0;
-    }
-    if (dy < 5 && dy > -5) {
-        dy = 0;
-    }
+  float dy = (float) Controller.AxisD.position();
 
     Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
-    //use motor encoders to get current rope length 
+
+
+    //use motor encoders to get increaae/decrease rope length 
     current_rope.rleft += deg_to_dist(leftMotor.position(degrees));
     current_rope.rright += deg_to_dist(rightMotor.position(degrees));
 
@@ -222,16 +214,12 @@ int main() {
 
     vRight = get_velocity(point2, dx, dy);
 
-    vLeft = vLeft * 360 / (2 * 3.14 * RADIUS);
-    vRight = vRight * 360 / (2 * 3.14 * RADIUS);
-   
-
-    if (Controller.ButtonEUp.pressing() && !out_of_range(current_point)) {
+    if (Controller.ButtonEUp.pressing() ) {
       leftMotor.spin(forward, vLeft , dps);
       rightMotor.spin(forward, vRight, dps);
 
    
-    } else if (Controller.ButtonEDown.pressing() && !out_of_range(current_point)) {
+    } else if (Controller.ButtonEDown.pressing() ) {
       leftMotor.spin(reverse, vLeft , dps);
       rightMotor.spin(reverse, vRight, dps);
     } else {
@@ -248,15 +236,10 @@ int main() {
     Brain.Screen.print("LR %.0f  RR %.0f", current_rope.rleft, current_rope.rright);
 
 
-    wait(50, msec);
+    wait(90, msec);
 
     // TODO: Change button
     if (Controller.ButtonLDown.pressing())
       Brain.programStop();
   }
 }
-
-
-
-// Button for E-stop
-// Button for controller control
