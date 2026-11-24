@@ -92,10 +92,13 @@ const float MAX_HEIGHT = 860;
 // Start function
 void configureAllSensors(){
   BrainInertial.calibrate();
-  while(BrainInertial.isCalibrating()){}
+  while(BrainInertial.isCalibrating()) {}
   Brain.Screen.setCursor(1,1);
+  //holds poisiton when stopped
+  //TODO: check if this is allowed
   leftMotor.setStopping(hold);
   rightMotor.setStopping(hold);
+  //resets motor encoders at the start
   leftMotor.setPosition(0, degrees);
   rightMotor.setPosition(0, degrees);
   penMotor.setPosition(0, degrees);
@@ -113,9 +116,7 @@ struct Rope{
     float rright;
 };
 
-
-
-/* function that convert rope length to x and y 
+/* function that convert rope length to x and y (given by claude's stimutlation)
 x = (L1² − L2² + D²) / (2D) + s/2
 y = √(L1² − (x − s/2)²) 
 */ 
@@ -128,20 +129,21 @@ Point length_to_xy(Rope* rope){
     return point;
 }
 
-
-// luna's formula to convert x and y to velocity
-// dl/dt = 1 / (x^2 + y^2)^(1/2)* (dx/dt *x + dy/dt *y)
+/* luna's formula to convert x and y to velocity
+ dl/dt = 1 / (x^2 + y^2)^(1/2)* (dx/dt *x + dy/dt *y)
+ */
 float get_velocity(const Point &point, float dx, float dy) {
     return (1 / sqrt(point.x*point.x + point.y*point.y)) * (point.x*dx + point.y*dy);
 }
 
+// converts motor roation ot rope length change
 float deg_to_dist(float deg){
     return deg*CF/360;
 }
 
+//controls to lift pen up or down
 void lift_pen_up(bool& pen_up){
     if(pen_up == false){
-        //      penMotor.spinToPosition(-90, degrees, 20, velocityUnits::pct, true);
         penMotor.spin(reverse, 20, percent);
         while(penMotor.position(degrees)> -90){}
         penMotor.stop(brake);
@@ -150,7 +152,6 @@ void lift_pen_up(bool& pen_up){
 }
 void lower_pen_down(bool& pen_up){
     if(pen_up == true){
-        
         penMotor.spin(forward, 20, percent);
         while(penMotor.position(degrees)<0){}
         penMotor.stop(brake);
@@ -158,27 +159,15 @@ void lower_pen_down(bool& pen_up){
     }
 }
 
-bool out_of_range(const Point& dist){
-    if(isnan(dist.x) || isnan(dist.y) || dist.x < 0 || dist.y < 0 || dist.x > MAX_WIDTH || dist.y > MAX_HEIGHT) {
-        Brain.Screen.setCursor(4, 1);
-        Brain.Screen.print("Input Out of Range");
-        return true;
-    }
-    return false;
-}   
 
-    float vLeft = 0;
-    float vRight = 0;
 int main() {  
-    bool pen_up = true;
-
+  bool pen_up = true;
+  float vLeft = 0;
+  float vRight = 0;
   
   configureAllSensors();
-  // holds poisiton when stopped
-  leftMotor.setStopping(hold);
-  rightMotor.setStopping(hold);
-  penMotor.setStopping(hold);  
 
+  //TODO: is this allowed? 
   for (;;) {
     // Pen up or down
     if (Controller.ButtonFDown.pressing()) {
@@ -188,31 +177,24 @@ int main() {
       lift_pen_up(pen_up);
     }
 
-  float dx = (float) Controller.AxisB.position() ;
-  //  float dy = -(float) Controller.AxisA.position(); -- > ??
-  float dy = (float) Controller.AxisD.position();
+    float dx = (float) Controller.AxisB.position() ;
+    float dy = (float) Controller.AxisA.position();
 
     Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
 
-
-    //use motor encoders to get increaae/decrease rope length 
+    //UPDATE rope length values
     current_rope.rleft += deg_to_dist(leftMotor.position(degrees));
     current_rope.rright += deg_to_dist(rightMotor.position(degrees));
 
     Point current_point = length_to_xy(&current_rope);
-    
-    
+    // get motor velocity based on controller inputs x-y distance change
     vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
-
-    Point point2 = { current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y };
-
-    vRight = get_velocity(point2, dx, dy);
+    vRight = get_velocity({ current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y }, dx, dy);
 
     if (Controller.ButtonEUp.pressing() ) {
       leftMotor.spin(forward, vLeft , dps);
       rightMotor.spin(forward, vRight, dps);
-
-   
+    // not really need is it?
     } else if (Controller.ButtonEDown.pressing() ) {
       leftMotor.spin(reverse, vLeft , dps);
       rightMotor.spin(reverse, vRight, dps);
@@ -228,7 +210,6 @@ int main() {
     Brain.Screen.print("X %.0f  Y %.0f", current_point.x, current_point.y);
     Brain.Screen.setCursor(3, 1);
     Brain.Screen.print("LR %.0f  RR %.0f", current_rope.rleft, current_rope.rright);
-
 
     wait(90, msec);
 
