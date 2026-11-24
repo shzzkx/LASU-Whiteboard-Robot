@@ -74,10 +74,6 @@ void vexcodeInit() {
 // Allows for easier use of the VEX Library
 using namespace vex;
 
-#define MAX_CONTOURS 5
-
-#define MAX_COORDS 30
-
 typedef struct {
     int numContours;
     int numCoords[MAX_CONTOURS];
@@ -87,10 +83,8 @@ typedef struct {
 
 const float GAP_DIST = 50; 
 const float CF = 60;
-
 const float ROPE_LENGTH = 1020;
 const float MAX_WIDTH = 1020;
-  
 const float MAX_HEIGHT = 860;
 
 
