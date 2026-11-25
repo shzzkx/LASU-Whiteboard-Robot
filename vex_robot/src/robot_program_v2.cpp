@@ -102,11 +102,18 @@ static const CoordData coordData = {
 
 const float GAP_DIST = 7.5; // cm
 const float RADIUS = 20.0; // cm
+
 const float STEP_DIST = 5.0; // cm
 const float MAX_X = 116;
 const float MAX_Y = 86;
 const float DEG_POS1 = 90; //deg
 const float DEG_POS2 = -90; //Pen down position
+
+//const for remote control
+const float CF = 60;  //mm
+const float ROPE_LENGTH = 1020; // mm
+const float MAX_WIDTH = 1020; // mm
+const float MAX_HEIGHT = 860; //mm
 
 // Start function
 void configureAllSensors(){
@@ -165,16 +172,38 @@ void lower_pen_down(bool& pen_up){
     }
 }
 
+/* function that convert rope length to x and y (given by claude's stimutlation)
+x = (L1² − L2² + D²) / (2D) + s/2
+y = √(L1² − (x − s/2)²) 
+*/ 
+
+Point length_to_xy(Rope* rope){
+    Point point{};
+    float D = MAX_WIDTH - GAP_DIST; // distance between the two motors taken away from the coordinate system
+    point.x = (rope->rleft*rope->rleft - rope->rright*rope->rright + D*D) / (2*D) + GAP_DIST/2;
+    point.y = sqrt(rope->rleft*rope->rleft - (point.x - GAP_DIST/2)*(point.x - GAP_DIST/2));
+    return point;
+}
+
+/* luna's formula to convert x and y to velocity
+ dl/dt = 1 / (x^2 + y^2)^(1/2)* (dx/dt *x + dy/dt *y)
+ */
+float get_velocity(const Point &point, float dx, float dy) {
+    return (1 / sqrt(point.x*point.x + point.y*point.y)) * (point.x*dx + point.y*dy);
+}
+
+// converts motor roation ot rope length change
+float deg_to_dist(float deg){
+    return deg*CF/360;
+}
+
 void remote_control(bool& pen_up) {  
-
-  double vLeft = 30;
-  double vRight = 30;
-  const double step = 1;   // percent changed per loop while a button is held
-
-  // Holds position when stopped.
+  float vLeft = 0;
+  float vRight = 0;
   
-
-  for (;;) {
+  configureAllSensors();
+  
+  while(!Controller.ButtonEDown.pressing()) {
     // Pen up or down
     if (Controller.ButtonFDown.pressing()) {
       lower_pen_down(pen_up);
@@ -183,30 +212,25 @@ void remote_control(bool& pen_up) {
       lift_pen_up(pen_up);
     }
 
-    // Left motor speed
-    if (Controller.ButtonLUp.pressing()) {
-      vLeft = fmin(vLeft + step, 100);
-    }
-    if (Controller.ButtonLDown.pressing()) {
-      vLeft = fmax(vLeft - step, -100);
-    }
+    float dx = (float) Controller.AxisB.position()*5 ;
+    float dy = (float) Controller.AxisA.position()*5;
 
-    // Right motor speed
-    if (Controller.ButtonRUp.pressing()) {
-      vRight = fmin(vRight + step, 100);
-    }
-    if (Controller.ButtonRDown.pressing()) {
-      vRight = fmax(vRight - step, -100);
-    }
+    Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
 
-    // Drive
-    if (Controller.ButtonEUp.pressing()) {
-      leftMotor.spin(forward, vRight, percent);
-      rightMotor.spin(forward,vLeft , percent);
-    } else if (Controller.ButtonEDown.pressing()) {
-      leftMotor.spin(reverse,vRight , percent);
-      rightMotor.spin(reverse, vLeft, percent);
-    } else {
+    //UPDATE rope length values
+    current_rope.rleft += deg_to_dist(leftMotor.position(degrees));
+    current_rope.rright += deg_to_dist(rightMotor.position(degrees));
+
+    Point current_point = length_to_xy(&current_rope);
+    // get motor velocity based on controller inputs x-y distance change
+    vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
+    vRight = get_velocity({ current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y }, dx, dy);
+
+    if (Controller.AxisB.position() != 0 || Controller.AxisB.position() != 0 ) {
+      leftMotor.spin(forward, vLeft , dps);
+      rightMotor.spin(forward, vRight, dps);
+    }
+    else {
       leftMotor.stop();
       rightMotor.stop();
     }
@@ -214,14 +238,15 @@ void remote_control(bool& pen_up) {
     Brain.Screen.clearLine(1);
     Brain.Screen.setCursor(1, 1);
     Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
+    Brain.Screen.setCursor(2, 1);
+    Brain.Screen.print("X %.0f  Y %.0f", current_point.x, current_point.y);
+    Brain.Screen.setCursor(3, 1);
+    Brain.Screen.print("LR %.0f  RR %.0f", current_rope.rleft, current_rope.rright);
 
-    wait(50, msec);
-
-    // // TODO: Change button
-    // if (Controller.ButtonEUp.pressing())
-    //   Brain.programStop();
-  }
+    wait(90, msec);
+    }
 }
+
 
 
 class Plotter
