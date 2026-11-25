@@ -28,10 +28,58 @@ brain Brain;
 
 // Robot configuration code.
 inertial BrainInertial = inertial();
+touchled TouchLED9 = touchled(PORT9);
 motor rightMotor = motor(PORT7, false);
 motor leftMotor = motor(PORT12, false);
 motor penMotor = motor(PORT8, false);
 controller Controller = controller();
+
+// Converts a color to a string
+const char* convertColorToString(color col) {
+  if (col == colorType::red) return "red";
+  else if (col == colorType::green) return "green";
+  else if (col == colorType::blue) return "blue";
+  else if (col == colorType::white) return "white";
+  else if (col == colorType::yellow) return "yellow";
+  else if (col == colorType::orange) return "orange";
+  else if (col == colorType::purple) return "purple";
+  else if (col == colorType::cyan) return "cyan";
+  else if (col == colorType::black) return "black";
+  else if (col == colorType::transparent) return "transparent";
+  else if (col == colorType::red_violet) return "red_violet";
+  else if (col == colorType::violet) return "violet";
+  else if (col == colorType::blue_violet) return "blue_violet";
+  else if (col == colorType::blue_green) return "blue_green";
+  else if (col == colorType::yellow_green) return "yellow_green";
+  else if (col == colorType::yellow_orange) return "yellow_orange";
+  else if (col == colorType::red_orange) return "red_orange";
+  else if (col == colorType::none) return "none";
+  else return "unknown";
+}
+
+
+// Convert colorType to string
+const char* convertColorToString(colorType col) {
+  if (col == colorType::red) return "red";
+  else if (col == colorType::green) return "green";
+  else if (col == colorType::blue) return "blue";
+  else if (col == colorType::white) return "white";
+  else if (col == colorType::yellow) return "yellow";
+  else if (col == colorType::orange) return "orange";
+  else if (col == colorType::purple) return "purple";
+  else if (col == colorType::cyan) return "cyan";
+  else if (col == colorType::black) return "black";
+  else if (col == colorType::transparent) return "transparent";
+  else if (col == colorType::red_violet) return "red_violet";
+  else if (col == colorType::violet) return "violet";
+  else if (col == colorType::blue_violet) return "blue_violet";
+  else if (col == colorType::blue_green) return "blue_green";
+  else if (col == colorType::yellow_green) return "yellow_green";
+  else if (col == colorType::yellow_orange) return "yellow_orange";
+  else if (col == colorType::red_orange) return "red_orange";
+  else if (col == colorType::none) return "none";
+  else return "unknown";
+}
 
 
 // generating and setting random seed
@@ -105,39 +153,37 @@ struct Rope{
 const Point square[] = {{1, 1}};
 const Point star[] = {{1, 1}};
 
-// Colors: 0 is red, 120 is green, 240 is blue
-const int square_color = 0;
-const int star_color = 120;
-
 void display_square() {
-    Brain.Screen.setPenColor(square_color);
+    Brain.Screen.setPenColor(black);
     for (int i = 0; i < 10; i++) {
         Brain.Screen.clearLine(i+1);
     }
+    Brain.Screen.drawRectangle(2, 21, 6, 6, white);
     Brain.Screen.setCursor(6, 20);
     Brain.Screen.print("SQUARE");
     // brain.screen.print(square pixel art)
 }
 
 void display_star() {
-    Brain.Screen.setPenColor(star_color);
+    Brain.Screen.setPenColor(black);
     for (int i = 0; i < 10; i++) {
         Brain.Screen.clearLine(i+1);
     }
+    Brain.Screen.drawRectangle(2, 21, 6, 6, white);
     Brain.Screen.setCursor(6, 20);
     Brain.Screen.print("STAR");
     // brain.screen.print(star pixel art)
 }
 
 int pick_shape() {
+    Brain.Screen.setPenColor(white);
+    Brain.Screen.setCursor(11, 20);
+    Brain.Screen.print("Use ARROWS to select shape,");
+    Brain.Screen.setCursor(12, 17);
+    Brain.Screen.print("press TOUCH LED to start drawing!");
+
     int shape_num_counter = 0;
-
-    Brain.Screen.setCursor(11, 17);
-    Brain.Screen.print("Click the arrows to choose a shape,");
-    Brain.Screen.setCursor(12, 14);
-    Brain.Screen.print("then click the touch LED to start drawing!");
-
-    while (!TouchLED9.is_pressing()) {
+    while (!TouchLED9.pressing()) {
         if (shape_num_counter % 1 == 0) {
             display_square();
         }
@@ -404,20 +450,23 @@ int main(){
 
     while(!Brain.buttonUp.pressing() && !Brain.buttonDown.pressing()){}
     if (Brain.buttonUp.pressing()) {
+        TouchLED9.on(green);
         isRemoteControl = false;
     } else if (Brain.buttonDown.pressing()) {
+        TouchLED9.on(blue);
         isRemoteControl = true;
     }
+    while(Brain.buttonUp.pressing() && Brain.buttonDown.pressing()){}
 
     if(isRemoteControl){
         remote_control(pen_up);
     } else {
         int shape_num = pick_shape();
         if (shape_num == 1) {
-            draw_shape(pen_up, plotter, square);
+            vector_path(pen_up, plotter, square);
         }
         else if (shape_num == 2) {
-            draw_shape(pen_up, plotter, star);
+            vector_path(pen_up, plotter, star);
         }
 
         Brain.programStop();
