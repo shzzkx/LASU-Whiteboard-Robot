@@ -195,11 +195,11 @@ void display_triangle() {
 int pick_shape() {
     Brain.Screen.clearScreen();
     Brain.Screen.setPenColor(white);
-    Brain.Screen.setCursor(5, 1);
+    Brain.Screen.setCursor(5, 6);
     Brain.Screen.print("Use ARROWS to");
     Brain.Screen.setCursor(6, 1);
     Brain.Screen.print("select shape, press");
-    Brain.Screen.setCursor(7, 1);
+    Brain.Screen.setCursor(7, 2);
     Brain.Screen.print("TOUCH LED to draw!");
 
     bool pressed_next;
