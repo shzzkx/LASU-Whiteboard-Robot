@@ -127,8 +127,11 @@ const float PRIM = 6.0; // cm
 const float STEP_DIST = 5.0; // cm
 const float MAX_X = 116;
 const float MAX_Y = 86;
-const float DEG_POS1 = 90; //deg
-const float DEG_POS2 = -90; //Pen down position
+//const for remote control
+const float CF = 60;  //mm
+const float ROPE_LENGTH = 1020; // mm
+const float MAX_WIDTH = 1020; // mm
+const float MAX_HEIGHT = 860; //mm
 
 
 // Start function
@@ -210,8 +213,8 @@ int pick_shape() {
           Brain.Screen.clearLine(i+1);
         }
 
-        Brain.Screen.setCursor(1, 1);
-        Brain.Screen.print("%d", shape_num_counter); // TEMP for debugging.
+        //Brain.Screen.setCursor(1, 1);
+        //Brain.Screen.print("%d", shape_num_counter); // TEMP for debugging.
 
         if (shape_num_counter == 1) {
             display_square();
@@ -222,7 +225,20 @@ int pick_shape() {
         else if (shape_num_counter == 3) {
             display_triangle();
         }
-        while(!Brain.buttonLeft.pressing() && !Brain.buttonRight.pressing()) {}
+        while(!Brain.buttonLeft.pressing() && !Brain.buttonRight.pressing()) {
+          if (TouchLED9.pressing()) {
+              Brain.Screen.clearScreen();
+              if (shape_num_counter == 1) {
+                  return 1;
+              }
+              else if (shape_num_counter == 2) {
+                  return 2;
+              }
+              else if (shape_num_counter == 3) {
+                  return 3;
+              }
+          }
+        }
         if (Brain.buttonRight.pressing()) pressed_next = true;
         else pressed_next = false;
         while(Brain.buttonLeft.pressing() || Brain.buttonRight.pressing()) {}
@@ -244,17 +260,6 @@ int pick_shape() {
         }
     }
 
-    Brain.Screen.clearScreen();
-
-    if (shape_num_counter % 1 == 0) {
-        return 1;
-    }
-    else if (shape_num_counter % 2 == 0) {
-        return 2;
-    }
-    else if (shape_num_counter % 3 == 0) {
-        return 3;
-    }
 
     return -1;
 }
@@ -281,30 +286,47 @@ float dist_to_deg(float dist){
 void lift_pen_up(bool& pen_up){
     if(pen_up == false){
         penMotor.spin(reverse, 20, percent);
-        while(penMotor.position(degrees)>DEG_POS1){}
-        penMotor.stop(brake);
+        while(penMotor.position(degrees)>0){}
+        penMotor.setStopping(hold);
         pen_up = true;
     }
 }
 void lower_pen_down(bool& pen_up){
     if(pen_up == true){
         penMotor.spin(forward, 20, percent);
-        while(penMotor.position(degrees)<DEG_POS2){}
-        penMotor.stop(brake);
+        while(penMotor.position(degrees)<90){}
+        penMotor.setStopping(hold);
         pen_up = false;
     }
 }
 
+Point length_to_xy(Rope* rope){
+    Point point{};
+    float D = MAX_WIDTH - GAP_DIST; // distance between the two motors taken away from the coordinate system
+    point.x = (rope->rleft*rope->rleft - rope->rright*rope->rright + D*D) / (2*D) + GAP_DIST/2;
+    point.y = sqrt(rope->rleft*rope->rleft - (point.x - GAP_DIST/2)*(point.x - GAP_DIST/2));
+    return point;
+}
+
+/* luna's formula to convert x and y to velocity
+ dl/dt = 1 / (x^2 + y^2)^(1/2)* (dx/dt *x + dy/dt *y)
+ */
+float get_velocity(const Point &point, float dx, float dy) {
+    return (1 / sqrt(point.x*point.x + point.y*point.y)) * (point.x*dx + point.y*dy);
+}
+
+// converts motor roation ot rope length change
+float deg_to_dist(float deg){
+    return deg*CF/360;
+}
+
 void remote_control(bool& pen_up) {  
-
-  double vLeft = 30;
-  double vRight = 30;
-  const double step = 1;   // percent changed per loop while a button is held
-
-  // Holds position when stopped.
+  float vLeft = 0;
+  float vRight = 0;
   
-
-  for (;;) {
+  configureAllSensors();
+  
+  while(!Controller.ButtonEDown.pressing()) {
     // Pen up or down
     if (Controller.ButtonFDown.pressing()) {
       lower_pen_down(pen_up);
@@ -313,30 +335,25 @@ void remote_control(bool& pen_up) {
       lift_pen_up(pen_up);
     }
 
-    // Left motor speed
-    if (Controller.ButtonLUp.pressing()) {
-      vLeft = fmin(vLeft + step, 100);
-    }
-    if (Controller.ButtonLDown.pressing()) {
-      vLeft = fmax(vLeft - step, -100);
-    }
+    float dx = (float) Controller.AxisB.position()*5 ;
+    float dy = (float) Controller.AxisA.position()*5;
 
-    // Right motor speed
-    if (Controller.ButtonRUp.pressing()) {
-      vRight = fmin(vRight + step, 100);
-    }
-    if (Controller.ButtonRDown.pressing()) {
-      vRight = fmax(vRight - step, -100);
-    }
+    Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
 
-    // Drive
-    if (Controller.ButtonEUp.pressing()) {
-      leftMotor.spin(forward, vRight, percent);
-      rightMotor.spin(forward,vLeft , percent);
-    } else if (Controller.ButtonEDown.pressing()) {
-      leftMotor.spin(reverse,vRight , percent);
-      rightMotor.spin(reverse, vLeft, percent);
-    } else {
+    //UPDATE rope length values
+    current_rope.rleft += deg_to_dist(leftMotor.position(degrees));
+    current_rope.rright += deg_to_dist(rightMotor.position(degrees));
+
+    Point current_point = length_to_xy(&current_rope);
+    // get motor velocity based on controller inputs x-y distance change
+    vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
+    vRight = get_velocity({ current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y }, dx, dy);
+
+    if (Controller.AxisB.position() != 0 || Controller.AxisB.position() != 0 ) {
+      leftMotor.spin(forward, vLeft , dps);
+      rightMotor.spin(forward, vRight, dps);
+    }
+    else {
       leftMotor.stop();
       rightMotor.stop();
     }
@@ -344,13 +361,13 @@ void remote_control(bool& pen_up) {
     Brain.Screen.clearLine(1);
     Brain.Screen.setCursor(1, 1);
     Brain.Screen.print("L %.0f  R %.0f", vLeft, vRight);
+    Brain.Screen.setCursor(2, 1);
+    Brain.Screen.print("X %.0f  Y %.0f", current_point.x, current_point.y);
+    Brain.Screen.setCursor(3, 1);
+    Brain.Screen.print("LR %.0f  RR %.0f", current_rope.rleft, current_rope.rright);
 
-    wait(50, msec);
-
-    // // TODO: Change button
-    // if (Controller.ButtonEUp.pressing())
-    //   Brain.programStop();
-  }
+    wait(90, msec);
+    }
 }
 
 
@@ -369,7 +386,6 @@ class Plotter
         Plotter(Point given_point) {
           current_point = given_point;
         }
-        // ~Plotter();
 
         void set_point_x(float x1){
             current_point.x = x1;
@@ -394,8 +410,6 @@ class Plotter
             
             float left_deg = dist_to_deg(new_rope.rleft - current_rope.rleft);
             float right_deg = dist_to_deg(new_rope.rright - current_rope.rright);
-        
-            //check if max > 0.1?
 
             float big = fmax(fabs(left_deg), fabs(right_deg));
             const float BASE_SPEED = 20;   // percent
@@ -408,6 +422,7 @@ class Plotter
 
             bool leftDone  = (fabs(left_deg) < 0.1);
             bool rightDone = (fabs(right_deg) < 0.1);
+
 
             if(!leftDone){
                 if(left_deg>0){
@@ -425,7 +440,7 @@ class Plotter
                 }
             }
 
-            while (!leftDone || !rightDone || !Controller.ButtonEUp.pressing()) {
+            while (!leftDone || !rightDone) {
                 if (!leftDone && fabs(leftMotor.position(degrees) - startL) >= fabs(left_deg)) {
                     leftMotor.stop(brake);
                     leftDone = true;
@@ -434,9 +449,9 @@ class Plotter
                     rightMotor.stop(brake);
                     rightDone = true;
                 }
+                if (Controller.ButtonEUp.pressing()) e_stop = true;
                 wait(5, msec);
             }
-            if (Controller.ButtonEUp.pressing()) e_stop = true;
 
             current_point = destination;
         }
@@ -444,6 +459,7 @@ class Plotter
         void move_path(const Point& destination, bool &e_stop)
         {
             if(!out_of_range(destination)){
+                Brain.Screen.print("f");
                 float delta_x = destination.x - current_point.x;
                 float delta_y = destination.y - current_point.y;
                 float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
@@ -468,23 +484,23 @@ class Plotter
 
 void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[], bool &e_stop){
   int i = 1;
-  while (!e_stop && i < num_coords)
+  while (!e_stop && i < num_coords) {
     plotter.move_path(to_draw[i], e_stop);
     i++;
     // Emergency stop function.
     if (Controller.ButtonEUp.pressing()) e_stop = true;
       // This will exit draw_shape, vector_path, and then call program stop from main
+  }
 }
 
-void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[]){ 
-    bool e_stop = false;
+void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[], bool &e_stop){
     int num_coords = sizeof(to_draw) / sizeof(to_draw[0]);
     lift_pen_up(pen_up);
     plotter.move_path(to_draw[0], e_stop);
     lower_pen_down(pen_up);
+    // draw_shape(num_coords, plotter, to_draw, e_stop);
     draw_shape(num_coords, plotter, to_draw, e_stop);
-    lift_pen_up(pen_up);
-    plotter.move_path(starting_location, e_stop);
+    Brain.Screen.setCursor(1,1);
 }
 
 
@@ -497,23 +513,24 @@ int main(){
     // initialize
     bool pen_up = false;
     bool isRemoteControl;
+    bool e_stop = false;
     Plotter plotter(starting_location);
 
     leftMotor.setStopping(hold);
     rightMotor.setStopping(hold);
-    penMotor.setStopping(hold);  
+    penMotor.setStopping(hold); 
 
     //Start up
     configureAllSensors();
     Brain.Screen.clearScreen();
     Brain.Screen.setFont(mono15);
     Brain.Screen.setCursor(1, 1);
-    Brain.Screen.print("Press UP");
+    Brain.Screen.print("Press LEFT");
     Brain.Screen.newLine();
     Brain.Screen.print("for autonomous.");
     Brain.Screen.newLine();
     Brain.Screen.newLine();
-    Brain.Screen.print("Press DOWN");
+    Brain.Screen.print("Press RIGHT");
     Brain.Screen.newLine();
     Brain.Screen.print("for remote control.");
 
@@ -532,28 +549,29 @@ int main(){
     }
     else {
         int shape_num = pick_shape();
+        Brain.Screen.setFont(mono20);
+        Brain.Screen.setCursor(2, 1);
+        Brain.Screen.print("Drawing");
+        Brain.Screen.setCursor(4, 1);
         if (shape_num == 1) {
-            //vector_path(pen_up, plotter, square);
-            Brain.Screen.print("Square selected");
-            wait(2, seconds);
+            Brain.Screen.print("Square...");
+            vector_path(pen_up, plotter, square, e_stop);
         }
         else if (shape_num == 2) {
-            //vector_path(pen_up, plotter, star);
-            Brain.Screen.print("Star selected");
-            wait(2, seconds);
+            Brain.Screen.print("Star...");
+            vector_path(pen_up, plotter, star, e_stop);
         }
         else if (shape_num == 3) {
-            //vector_path(pen_up, plotter, triangle);
-            Brain.Screen.print("Tri selected");
-            wait(2, seconds);
+            Brain.Screen.print("Triangle...");
+            vector_path(pen_up, plotter, triangle, e_stop);
         }
         else {
-          Brain.Screen.print("Error occured");
+          Brain.Screen.print("Error occurred");
           wait(2, seconds);
         }
-
-        //Brain.programStop();
     }
-    // e stop
+    lift_pen_up(pen_up);
+    plotter.move_path(starting_location, e_stop);
+    Brain.programStop();
     
 }
