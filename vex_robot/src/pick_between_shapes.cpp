@@ -123,7 +123,7 @@ using namespace vex;
 
 
 const float GAP_DIST = 7.5; // cm
-const float RADIUS = 20.0; // cm
+const float PRIM = 6.0; // cm
 const float STEP_DIST = 5.0; // cm
 const float MAX_X = 116;
 const float MAX_Y = 86;
@@ -151,66 +151,100 @@ struct Rope{
     float rright;
 };
 
+const Point starting_location = {52, 86};
+
 const Point square[] = {{52, 56}, {52, 36}, {72, 36}, {72, 56}, {52, 56}};
 const Point star[] = {{1, 1}};
 const Point triangle[] = {{42, 56}, {52, 22.36}, {62, 56}, {42, 56}};
 
 void display_square() {
-    Brain.Screen.setPenColor(black);
-    for (int i = 0; i < 10; i++) {
-        Brain.Screen.clearLine(i+1);
-    }
-    Brain.Screen.drawRectangle(2, 21, 36, 36, white);
-    Brain.Screen.setCursor(6, 20);
-    Brain.Screen.print("SQUARE");
+    Brain.Screen.setCursor(2, 7);
+    //Brain.Screen.print("SQUARE");
     // brain.screen.print(square pixel art)
     // Display square the robot will actually draw
-    Brain.Screen.setPenColor(red);
     for (int i = 0; i < ((sizeof(square) / sizeof(square[i]) - 1)); i++) {
-        float start_x = square[i].x;
-        float start_y = square[i].y;
-        float new_x = square[i+1].x;
-        float new_y = square[i+1].y;
+        float start_x = square[i].x + 5;
+        float start_y = square[i].y - 20;
+        float new_x = square[i+1].x + 5;
+        float new_y = square[i+1].y - 20;
+        // Additions of +5 and -20 made to center the square properly on the screen
         Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
     }
 }
 
 void display_star() {
-    Brain.Screen.setPenColor(black);
-    for (int i = 0; i < 10; i++) {
-        Brain.Screen.clearLine(i+1);
-    }
-    Brain.Screen.drawRectangle(2, 21, 36, 36, white);
-    Brain.Screen.setCursor(6, 20);
+    Brain.Screen.setCursor(2, 8);
     Brain.Screen.print("STAR");
     // brain.screen.print(star pixel art)
 }
 
+void display_triangle() {
+    Brain.Screen.setCursor(2, 6);
+    //Brain.Screen.print("TRIANGLE");
+    // brain.screen.print(triangle pixel art)
+    for (int i = 0; i < ((sizeof(triangle) / sizeof(triangle[i]) - 1)); i++) {
+        float start_x = triangle[i].x + 10;
+        float start_y = triangle[i].y - 10;
+        float new_x = triangle[i+1].x + 10;
+        float new_y = triangle[i+1].y - 10;
+        // Additions of +10 and -10 made to center the triangle properly on the screen
+        Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
+    }
+}
+
 int pick_shape() {
+    Brain.Screen.clearScreen();
     Brain.Screen.setPenColor(white);
-    Brain.Screen.setCursor(11, 10);
-    Brain.Screen.print("Use ARROWS to select shape,");
-    Brain.Screen.setCursor(12, 7);
-    Brain.Screen.print("press TOUCH LED to start drawing!");
+    Brain.Screen.setCursor(5, 1);
+    Brain.Screen.print("Use ARROWS to");
+    Brain.Screen.setCursor(6, 1);
+    Brain.Screen.print("select shape, press");
+    Brain.Screen.setCursor(7, 1);
+    Brain.Screen.print("TOUCH LED to draw!");
+
+    bool pressed_next;
 
     int shape_num_counter = 1;
     while (!TouchLED9.pressing()) {
-        if (shape_num_counter % 1 == 0) {
+        for (int i = 0; i < 4; i++) {
+          Brain.Screen.clearLine(i+1);
+        }
+
+        Brain.Screen.setCursor(1, 1);
+        Brain.Screen.print("%d", shape_num_counter); // TEMP for debugging.
+
+        if (shape_num_counter == 1) {
             display_square();
         }
-        else if (shape_num_counter % 2 == 0) {
+        else if (shape_num_counter == 2) {
             display_star();
         }
+        else if (shape_num_counter == 3) {
+            display_triangle();
+        }
         while(!Brain.buttonLeft.pressing() && !Brain.buttonRight.pressing()) {}
-        if (Brain.buttonRight.pressing()) shape_num_counter++;
+        if (Brain.buttonRight.pressing()) pressed_next = true;
+        else pressed_next = false;
+        while(Brain.buttonLeft.pressing() || Brain.buttonRight.pressing()) {}
+        if (pressed_next == true) {
+            if (shape_num_counter < 3) { 
+                shape_num_counter++;
+            }
+            else {
+              shape_num_counter = 1;
+            }
+        }
         else {
             if (shape_num_counter > 1) { 
                 shape_num_counter--;
             }
-            // Else if counter already at 1, no back button
+            else {
+              shape_num_counter = 3;
+            }
         }
-        while(Brain.buttonLeft.pressing() && Brain.buttonRight.pressing()) {}
     }
+
+    Brain.Screen.clearScreen();
 
     if (shape_num_counter % 1 == 0) {
         return 1;
@@ -218,6 +252,11 @@ int pick_shape() {
     else if (shape_num_counter % 2 == 0) {
         return 2;
     }
+    else if (shape_num_counter % 3 == 0) {
+        return 3;
+    }
+
+    return -1;
 }
 
 Rope xy_to_length(const Point& point){
@@ -236,7 +275,7 @@ Rope xy_to_length(const Point& point){
 
 
 float dist_to_deg(float dist){
-    return dist*360/(6.0);
+    return dist*360/(PRIM);
 }
 
 void lift_pen_up(bool& pen_up){
@@ -327,6 +366,9 @@ class Plotter
         Plotter(float x, float y){
             current_point = {x,y};
         }
+        Plotter(Point given_point) {
+          current_point = given_point;
+        }
         // ~Plotter();
 
         void set_point_x(float x1){
@@ -345,7 +387,7 @@ class Plotter
             return false;
         }
 
-        void move_point_to_point (const Point& destination){
+        void move_point_to_point (const Point& destination, bool &e_stop){
 
             Rope new_rope = xy_to_length(destination);
             Rope current_rope = xy_to_length(current_point);
@@ -383,7 +425,7 @@ class Plotter
                 }
             }
 
-            while (!leftDone || !rightDone) {
+            while (!leftDone || !rightDone || !Controller.ButtonEUp.pressing()) {
                 if (!leftDone && fabs(leftMotor.position(degrees) - startL) >= fabs(left_deg)) {
                     leftMotor.stop(brake);
                     leftDone = true;
@@ -394,11 +436,12 @@ class Plotter
                 }
                 wait(5, msec);
             }
+            if (Controller.ButtonEUp.pressing()) e_stop = true;
 
             current_point = destination;
         }
 
-        void move_path(const Point& destination)
+        void move_path(const Point& destination, bool &e_stop)
         {
             if(!out_of_range(destination)){
                 float delta_x = destination.x - current_point.x;
@@ -412,8 +455,9 @@ class Plotter
                 for(int i=1; i<= num_steps; i++){
                     nextPoint.x = start.x+i*STEP_DIST/hype_length*delta_x;
                     nextPoint.y = start.y + i*STEP_DIST/hype_length*delta_y;
-                    move_point_to_point(nextPoint);
+                    move_point_to_point(nextPoint, e_stop);
                 }
+                if (Controller.ButtonEUp.pressing()) e_stop = true;
                 Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
             }
         }
@@ -422,22 +466,25 @@ class Plotter
 
 
 
-void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[]){
-    for(int i=1; i<num_coords; i++) { // Starts at 1 bc we already moved to first point
-      plotter.move_path(to_draw[i]);
-      if (Controller.ButtonEUp.pressing()) // TODO: Change button bindings
-        i = num_coords + 1;
-        // This will exit draw_shape, vector_path, and then call program stop from main
-    }
+void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[], bool &e_stop){
+  int i = 1;
+  while (!e_stop && i < num_coords)
+    plotter.move_path(to_draw[i], e_stop);
+    i++;
+    // Emergency stop function.
+    if (Controller.ButtonEUp.pressing()) e_stop = true;
+      // This will exit draw_shape, vector_path, and then call program stop from main
 }
 
-void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[]){
+void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[]){ 
+    bool e_stop = false;
     int num_coords = sizeof(to_draw) / sizeof(to_draw[0]);
     lift_pen_up(pen_up);
-    plotter.move_path(to_draw[0]);
+    plotter.move_path(to_draw[0], e_stop);
     lower_pen_down(pen_up);
-    draw_shape(num_coords, plotter, to_draw);
+    draw_shape(num_coords, plotter, to_draw, e_stop);
     lift_pen_up(pen_up);
+    plotter.move_path(starting_location, e_stop);
 }
 
 
@@ -450,7 +497,7 @@ int main(){
     // initialize
     bool pen_up = false;
     bool isRemoteControl;
-    Plotter plotter(52, 86);
+    Plotter plotter(starting_location);
 
     leftMotor.setStopping(hold);
     rightMotor.setStopping(hold);
@@ -459,10 +506,16 @@ int main(){
     //Start up
     configureAllSensors();
     Brain.Screen.clearScreen();
+    Brain.Screen.setFont(mono15);
     Brain.Screen.setCursor(1, 1);
-    Brain.Screen.print("Press UP to start autonomous mode.");
+    Brain.Screen.print("Press UP");
     Brain.Screen.newLine();
-    Brain.Screen.print("Press DOWN to start remote control mode.");
+    Brain.Screen.print("for autonomous.");
+    Brain.Screen.newLine();
+    Brain.Screen.newLine();
+    Brain.Screen.print("Press DOWN");
+    Brain.Screen.newLine();
+    Brain.Screen.print("for remote control.");
 
     while(!Brain.buttonUp.pressing() && !Brain.buttonDown.pressing()){}
     if (Brain.buttonUp.pressing()) {
@@ -476,16 +529,30 @@ int main(){
 
     if(isRemoteControl){
         remote_control(pen_up);
-    } else {
+    }
+    else {
         int shape_num = pick_shape();
         if (shape_num == 1) {
-            vector_path(pen_up, plotter, square);
+            //vector_path(pen_up, plotter, square);
+            Brain.Screen.print("Square selected");
+            wait(2, seconds);
         }
         else if (shape_num == 2) {
-            vector_path(pen_up, plotter, star);
+            //vector_path(pen_up, plotter, star);
+            Brain.Screen.print("Star selected");
+            wait(2, seconds);
+        }
+        else if (shape_num == 3) {
+            //vector_path(pen_up, plotter, triangle);
+            Brain.Screen.print("Tri selected");
+            wait(2, seconds);
+        }
+        else {
+          Brain.Screen.print("Error occured");
+          wait(2, seconds);
         }
 
-        Brain.programStop();
+        //Brain.programStop();
     }
     // e stop
     
