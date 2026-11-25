@@ -130,6 +130,7 @@ const float MAX_Y = 86;
 const float DEG_POS1 = 90; //deg
 const float DEG_POS2 = -90; //Pen down position
 
+
 // Start function
 void configureAllSensors(){
   BrainInertial.calibrate();
@@ -150,18 +151,28 @@ struct Rope{
     float rright;
 };
 
-const Point square[] = {{1, 1}};
+const Point square[] = {{52, 56}, {52, 36}, {72, 36}, {72, 56}, {52, 56}};
 const Point star[] = {{1, 1}};
+const Point triangle[] = {{42, 56}, {52, 22.36}, {62, 56}, {42, 56}};
 
 void display_square() {
     Brain.Screen.setPenColor(black);
     for (int i = 0; i < 10; i++) {
         Brain.Screen.clearLine(i+1);
     }
-    Brain.Screen.drawRectangle(2, 21, 6, 6, white);
+    Brain.Screen.drawRectangle(2, 21, 36, 36, white);
     Brain.Screen.setCursor(6, 20);
     Brain.Screen.print("SQUARE");
     // brain.screen.print(square pixel art)
+    // Display square the robot will actually draw
+    Brain.Screen.setPenColor(red);
+    for (int i = 0; i < ((sizeof(square) / sizeof(square[i]) - 1)); i++) {
+        float start_x = square[i].x;
+        float start_y = square[i].y;
+        float new_x = square[i+1].x;
+        float new_y = square[i+1].y;
+        Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
+    }
 }
 
 void display_star() {
@@ -169,7 +180,7 @@ void display_star() {
     for (int i = 0; i < 10; i++) {
         Brain.Screen.clearLine(i+1);
     }
-    Brain.Screen.drawRectangle(2, 21, 6, 6, white);
+    Brain.Screen.drawRectangle(2, 21, 36, 36, white);
     Brain.Screen.setCursor(6, 20);
     Brain.Screen.print("STAR");
     // brain.screen.print(star pixel art)
@@ -177,12 +188,12 @@ void display_star() {
 
 int pick_shape() {
     Brain.Screen.setPenColor(white);
-    Brain.Screen.setCursor(11, 20);
+    Brain.Screen.setCursor(11, 10);
     Brain.Screen.print("Use ARROWS to select shape,");
-    Brain.Screen.setCursor(12, 17);
+    Brain.Screen.setCursor(12, 7);
     Brain.Screen.print("press TOUCH LED to start drawing!");
 
-    int shape_num_counter = 0;
+    int shape_num_counter = 1;
     while (!TouchLED9.pressing()) {
         if (shape_num_counter % 1 == 0) {
             display_square();
@@ -192,7 +203,12 @@ int pick_shape() {
         }
         while(!Brain.buttonLeft.pressing() && !Brain.buttonRight.pressing()) {}
         if (Brain.buttonRight.pressing()) shape_num_counter++;
-        else shape_num_counter--;
+        else {
+            if (shape_num_counter > 1) { 
+                shape_num_counter--;
+            }
+            // Else if counter already at 1, no back button
+        }
         while(Brain.buttonLeft.pressing() && Brain.buttonRight.pressing()) {}
     }
 
