@@ -6,7 +6,7 @@
 #include <math.h>
 #include <string.h>
 
-// #include "drawing_data.h"
+
 #include "vex.h"
 
 using namespace vex;
@@ -28,58 +28,11 @@ brain Brain;
 
 // Robot configuration code.
 inertial BrainInertial = inertial();
-touchled TouchLED9 = touchled(PORT9);
-motor rightMotor = motor(PORT7, false);
-motor leftMotor = motor(PORT12, false);
+motor leftMotor = motor(PORT7, false);
+motor rightMotor = motor(PORT12, true);
 motor penMotor = motor(PORT8, false);
 controller Controller = controller();
-
-// Converts a color to a string
-const char* convertColorToString(color col) {
-  if (col == colorType::red) return "red";
-  else if (col == colorType::green) return "green";
-  else if (col == colorType::blue) return "blue";
-  else if (col == colorType::white) return "white";
-  else if (col == colorType::yellow) return "yellow";
-  else if (col == colorType::orange) return "orange";
-  else if (col == colorType::purple) return "purple";
-  else if (col == colorType::cyan) return "cyan";
-  else if (col == colorType::black) return "black";
-  else if (col == colorType::transparent) return "transparent";
-  else if (col == colorType::red_violet) return "red_violet";
-  else if (col == colorType::violet) return "violet";
-  else if (col == colorType::blue_violet) return "blue_violet";
-  else if (col == colorType::blue_green) return "blue_green";
-  else if (col == colorType::yellow_green) return "yellow_green";
-  else if (col == colorType::yellow_orange) return "yellow_orange";
-  else if (col == colorType::red_orange) return "red_orange";
-  else if (col == colorType::none) return "none";
-  else return "unknown";
-}
-
-
-// Convert colorType to string
-const char* convertColorToString(colorType col) {
-  if (col == colorType::red) return "red";
-  else if (col == colorType::green) return "green";
-  else if (col == colorType::blue) return "blue";
-  else if (col == colorType::white) return "white";
-  else if (col == colorType::yellow) return "yellow";
-  else if (col == colorType::orange) return "orange";
-  else if (col == colorType::purple) return "purple";
-  else if (col == colorType::cyan) return "cyan";
-  else if (col == colorType::black) return "black";
-  else if (col == colorType::transparent) return "transparent";
-  else if (col == colorType::red_violet) return "red_violet";
-  else if (col == colorType::violet) return "violet";
-  else if (col == colorType::blue_violet) return "blue_violet";
-  else if (col == colorType::blue_green) return "blue_green";
-  else if (col == colorType::yellow_green) return "yellow_green";
-  else if (col == colorType::yellow_orange) return "yellow_orange";
-  else if (col == colorType::red_orange) return "red_orange";
-  else if (col == colorType::none) return "none";
-  else return "unknown";
-}
+touchled TouchLED6 = touchled(PORT6);
 
 
 // generating and setting random seed
@@ -103,6 +56,10 @@ void vexcodeInit() {
   // Initializing random seed.
   initializeRandomSeed(); 
 }
+
+
+// define variable for remote controller enable/disable
+bool RemoteControlCodeEnabled = true;
 
 #pragma endregion VEXcode Generated Robot Configuration
 
@@ -167,10 +124,10 @@ void display_square() {
     // brain.screen.print(square pixel art)
     // Display square the robot will actually draw
     for (int i = 0; i < ((sizeof(square) / sizeof(square[i]) - 1)); i++) {
-        float start_x = square[i].x + 5;
-        float start_y = square[i].y - 20;
-        float new_x = square[i+1].x + 5;
-        float new_y = square[i+1].y - 20;
+        float start_x = square[i].x * 1.1 + 15;
+        float start_y = square[i].y * 1.1 - 20;
+        float new_x = square[i+1].x * 1.1 + 15;
+        float new_y = square[i+1].y * 1.1 - 20;
         // Additions of +5 and -20 made to center the square properly on the screen
         Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
     }
@@ -178,8 +135,16 @@ void display_square() {
 
 void display_star() {
     Brain.Screen.setCursor(2, 8);
-    Brain.Screen.print("STAR");
+    //Brain.Screen.print("STAR");
     // brain.screen.print(star pixel art)
+    for (int i = 0; i < ((sizeof(star) / sizeof(star[i]) - 1)); i++) {
+        float start_x = star[i].x + 35;
+        float start_y = star[i].y - 10;
+        float new_x = star[i+1].x + 35;
+        float new_y = star[i+1].y - 10;
+        // Additions of +35 and -10 made to center the star properly on the screen
+        Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
+    }
 }
 
 void display_triangle() {
@@ -187,11 +152,11 @@ void display_triangle() {
     //Brain.Screen.print("TRIANGLE");
     // brain.screen.print(triangle pixel art)
     for (int i = 0; i < ((sizeof(triangle) / sizeof(triangle[i]) - 1)); i++) {
-        float start_x = triangle[i].x + 10;
+        float start_x = triangle[i].x + 20;
         float start_y = triangle[i].y - 10;
-        float new_x = triangle[i+1].x + 10;
+        float new_x = triangle[i+1].x + 20;
         float new_y = triangle[i+1].y - 10;
-        // Additions of +10 and -10 made to center the triangle properly on the screen
+        // Additions of +20 and -10 made to center the triangle properly on the screen
         Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
     }
 }
@@ -209,7 +174,7 @@ int pick_shape() {
     bool pressed_next;
 
     int shape_num_counter = 1;
-    while (!TouchLED9.pressing()) {
+    while (!TouchLED6.pressing()) {
         for (int i = 0; i < 4; i++) {
           Brain.Screen.clearLine(i+1);
         }
@@ -227,7 +192,7 @@ int pick_shape() {
             display_triangle();
         }
         while(!Brain.buttonLeft.pressing() && !Brain.buttonRight.pressing()) {
-          if (TouchLED9.pressing()) {
+          if (TouchLED6.pressing()) {
               Brain.Screen.clearScreen();
               if (shape_num_counter == 1) {
                   return 1;
@@ -286,17 +251,21 @@ float dist_to_deg(float dist){
 
 void lift_pen_up(bool& pen_up){
     if(pen_up == false){
+        leftMotor.stop(brake);
+        rightMotor.stop(brake);
         penMotor.spin(reverse, 20, percent);
         while(penMotor.position(degrees)>0){}
-        penMotor.setStopping(hold);
+        penMotor.stop(brake);
         pen_up = true;
     }
 }
 void lower_pen_down(bool& pen_up){
     if(pen_up == true){
+        leftMotor.stop(brake);
+        rightMotor.stop(brake);
         penMotor.spin(forward, 20, percent);
         while(penMotor.position(degrees)<90){}
-        penMotor.setStopping(hold);
+        penMotor.stop(brake);
         pen_up = false;
     }
 }
@@ -388,6 +357,13 @@ class Plotter
           current_point = given_point;
         }
 
+        float get_point_x() {
+          return current_point.x;
+        }
+        float get_point_y() {
+          return current_point.y;
+        }
+
         void set_point_x(float x1){
             current_point.x = x1;
         }
@@ -404,7 +380,7 @@ class Plotter
             return false;
         }
 
-        void move_point_to_point (const Point& destination, bool &e_stop){
+        void move_point_to_point (const Point& destination, bool &e_stop, const int BASE_SPEED = 40){
 
             Rope new_rope = xy_to_length(destination);
             Rope current_rope = xy_to_length(current_point);
@@ -413,7 +389,6 @@ class Plotter
             float right_deg = dist_to_deg(new_rope.rright - current_rope.rright);
 
             float big = fmax(fabs(left_deg), fabs(right_deg));
-            const float BASE_SPEED = 20;   // percent
             float speed_left = BASE_SPEED * fabs(left_deg) / big;
             float speed_right = BASE_SPEED * fabs(right_deg) / big;
 
@@ -450,7 +425,7 @@ class Plotter
                     rightMotor.stop(brake);
                     rightDone = true;
                 }
-                if (Controller.ButtonEUp.pressing()) e_stop = true;
+                //if (Controller.ButtonEUp.pressing()) e_stop = true;
                 wait(5, msec);
             }
 
@@ -460,7 +435,8 @@ class Plotter
         void move_path(const Point& destination, bool &e_stop)
         {
             if(!out_of_range(destination)){
-                Brain.Screen.print("f");
+              
+                Brain.Screen.print("Moving to %.1f, %.1f", destination.x, destination.y);
                 float delta_x = destination.x - current_point.x;
                 float delta_y = destination.y - current_point.y;
                 float hype_length = sqrt(delta_x*delta_x + delta_y*delta_y);
@@ -475,6 +451,8 @@ class Plotter
                     move_point_to_point(nextPoint, e_stop);
                 }
                 if (Controller.ButtonEUp.pressing()) e_stop = true;
+                Brain.Screen.setCursor(7, 1);
+                Brain.Screen.setFont(mono15);
                 Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
             }
         }
@@ -485,6 +463,8 @@ class Plotter
 
 void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[], bool &e_stop){
   int i = 1;
+  Brain.Screen.newLine();
+  Brain.Screen.print("Numcoords %d", num_coords);
   while (!e_stop && i < num_coords) {
     plotter.move_path(to_draw[i], e_stop);
     i++;
@@ -494,8 +474,7 @@ void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[], bool &e
   }
 }
 
-void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[], bool &e_stop){
-    int num_coords = sizeof(to_draw) / sizeof(to_draw[0]);
+void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[], bool &e_stop, int num_coords){
     lift_pen_up(pen_up);
     plotter.move_path(to_draw[0], e_stop);
     lower_pen_down(pen_up);
@@ -519,7 +498,8 @@ int main(){
 
     leftMotor.setStopping(hold);
     rightMotor.setStopping(hold);
-    penMotor.setStopping(hold); 
+    penMotor.setStopping(hold);
+    penMotor.setPosition(90, degrees); 
 
     //Start up
     configureAllSensors();
@@ -537,10 +517,10 @@ int main(){
 
     while(!Brain.buttonUp.pressing() && !Brain.buttonDown.pressing()){}
     if (Brain.buttonUp.pressing()) {
-        TouchLED9.on(green);
+        TouchLED6.on(green);
         isRemoteControl = false;
     } else if (Brain.buttonDown.pressing()) {
-        TouchLED9.on(blue);
+        TouchLED6.on(blue);
         isRemoteControl = true;
     }
     while(Brain.buttonUp.pressing() && Brain.buttonDown.pressing()){}
@@ -549,6 +529,14 @@ int main(){
         remote_control(pen_up);
     }
     else {
+        //bool temp = false;
+        //Point p1 = {52, 46};
+        //Point p2 = {72, 46};
+        //plotter.move_point_to_point(p1, temp);
+        
+        //plotter.move_path(p2, temp);
+        
+        //plotter.move_path(p1, temp);
         int shape_num = pick_shape();
         Brain.Screen.setFont(mono20);
         Brain.Screen.setCursor(2, 1);
@@ -556,15 +544,15 @@ int main(){
         Brain.Screen.setCursor(4, 1);
         if (shape_num == 1) {
             Brain.Screen.print("Square...");
-            vector_path(pen_up, plotter, square, e_stop);
+            vector_path(pen_up, plotter, square, e_stop, 5);
         }
         else if (shape_num == 2) {
             Brain.Screen.print("Star...");
-            vector_path(pen_up, plotter, star, e_stop);
+            vector_path(pen_up, plotter, star, e_stop, 11);
         }
         else if (shape_num == 3) {
             Brain.Screen.print("Triangle...");
-            vector_path(pen_up, plotter, triangle, e_stop);
+            vector_path(pen_up, plotter, triangle, e_stop, 4);
         }
         else {
           Brain.Screen.print("Error occurred");
@@ -572,7 +560,7 @@ int main(){
         }
     }
     lift_pen_up(pen_up);
-    plotter.move_path(starting_location, e_stop);
+    plotter.move_point_to_point(starting_location, e_stop, 60);
     Brain.programStop();
     
 }
