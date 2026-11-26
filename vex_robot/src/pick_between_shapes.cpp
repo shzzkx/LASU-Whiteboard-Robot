@@ -435,7 +435,7 @@ class Plotter
         void move_path(const Point& destination, bool &e_stop)
         {
             if(!out_of_range(destination)){
-              
+                Brain.Screen.setCursor(5, 1);
                 Brain.Screen.print("Moving to %.1f, %.1f", destination.x, destination.y);
                 float delta_x = destination.x - current_point.x;
                 float delta_y = destination.y - current_point.y;
@@ -451,7 +451,7 @@ class Plotter
                     move_point_to_point(nextPoint, e_stop);
                 }
                 if (Controller.ButtonEUp.pressing()) e_stop = true;
-                Brain.Screen.setCursor(7, 1);
+                Brain.Screen.setCursor(6, 1);
                 Brain.Screen.setFont(mono15);
                 Brain.Screen.print("Moved to %.1f, %.1f", destination.x, destination.y);
             }
@@ -464,7 +464,6 @@ class Plotter
 void draw_shape(int num_coords, Plotter& plotter, const Point to_draw[], bool &e_stop){
   int i = 1;
   Brain.Screen.newLine();
-  Brain.Screen.print("Numcoords %d", num_coords);
   while (!e_stop && i < num_coords) {
     plotter.move_path(to_draw[i], e_stop);
     i++;
@@ -538,10 +537,9 @@ int main(){
         
         //plotter.move_path(p1, temp);
         int shape_num = pick_shape();
-        Brain.Screen.setFont(mono20);
         Brain.Screen.setCursor(2, 1);
         Brain.Screen.print("Drawing");
-        Brain.Screen.setCursor(4, 1);
+        Brain.Screen.setCursor(3, 1);
         if (shape_num == 1) {
             Brain.Screen.print("Square...");
             vector_path(pen_up, plotter, square, e_stop, 5);
@@ -559,8 +557,14 @@ int main(){
           wait(2, seconds);
         }
     }
+    Brain.Screen.clearScreen();
+    Brain.Screen.setFont(mono20);
+    Brain.Screen.setCursor(2, 1);
+    Brain.Screen.print("Drawing");
+    Brain.Screen.setCursor(4, 1);
+    Brain.Screen.print("finished.");
     lift_pen_up(pen_up);
-    plotter.move_point_to_point(starting_location, e_stop, 60);
+    plotter.move_point_to_point(starting_location, e_stop, 30);
     Brain.programStop();
     
 }
