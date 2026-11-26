@@ -90,7 +90,7 @@ int main()
 
     // Increasing epsilon will simplify the contour more.
     // This is an opencv thing.
-    const double epsilon = 2.5;
+    const double epsilon = 5;
 
     const int MAX_CONTOURS = 5; // Maximum # of contours (shapes) per drawing.
                                 // E.g. Image of square will have one contour,
