@@ -34,8 +34,8 @@ IMAGE SPECIFICATIONS
 int main()
 {
     // Load image from drawings folder.
-    /* SQUARE DRAWING */ std::string image_path = "../drawings/square_drawing.png";
-    // STAR DRAWING std::string image_path = "../drawings/star_drawing.jpg";
+    /* SQUARE DRAWING  std::string image_path = "../drawings/square_drawing.png";
+    // STAR DRAWING */std::string image_path = "../drawings/star_drawing.jpg";
     cv::Mat image = cv::imread(image_path);
 
     // TEMP for debugging
@@ -213,8 +213,8 @@ int main()
                 // Scale coords to mm for whiteabord.
                 // NOTE: If we want origin to be in bottom left,
                 // use double y_mm = (image.rows - 1 - coord.y) * scaleY;
-                double x_mm = coord.x * scale;
-                double y_mm = coord.y * scale;
+                double x_mm = coord.x * scale * 0.05 + 10;
+                double y_mm = coord.y * scale * 0.05 + 10;
 
                 // Write coordinate into array.
                 fileWriter << "            {" << x_mm << ", " << y_mm << "},\n";
@@ -226,8 +226,8 @@ int main()
             }
             // Append the first coordinate to the end
             // so that the robot will draw a closed shape.
-            double x_mm = contour.front().x * scale;
-            double y_mm = contour.front().y * scale;
+            double x_mm = contour.front().x * scale * 0.05 + 10;
+            double y_mm = contour.front().y * scale * 0.05 + 10;
             fileWriter << "            {" << x_mm << ", " << y_mm << "},\n";
             fileWriter << "        },\n";
         }
