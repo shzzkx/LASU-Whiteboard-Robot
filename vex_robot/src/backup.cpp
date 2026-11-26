@@ -88,7 +88,7 @@ const float MAX_Y = 86;
 const float CF = 60;  //mm
 const float ROPE_LENGTH = 1020; // mm
 const float MAX_WIDTH = 1020; // mm
-const float MAX_HEIGHT = 860; //mm
+const float MAX_HEIGHT = 860; //mm, not used, here just in case we ever need it
 
 
 // Start function
