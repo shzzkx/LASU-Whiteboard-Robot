@@ -32,7 +32,7 @@ motor leftMotor = motor(PORT7, false);
 motor rightMotor = motor(PORT12, true);
 motor penMotor = motor(PORT8, false);
 controller Controller = controller();
-touchled TouchLED6 = touchled(PORT6);
+touchled TouchLED6 = touchled(PORT5); // Changed to port5 since it is easier to insert wire into port5
 
 
 // generating and setting random seed
@@ -86,9 +86,9 @@ const float MAX_X = 116;
 const float MAX_Y = 86;
 //const for remote control
 const float CF = 60;  //mm
-const float ROPE_LENGTH = 1020; // mm
-const float MAX_WIDTH = 1020; // mm
-const float MAX_HEIGHT = 860; //mm
+const float ROPE_LENGTH = 950; // mm
+const float MAX_WIDTH = 1160; // mm
+const float MAX_HEIGHT = 860; //mm, not used, here just in case we ever need it
 
 
 // Start function
@@ -114,8 +114,8 @@ struct Rope{
 const Point starting_location = {52, 86};
 
 const Point square[] = {{52, 56}, {52, 36}, {72, 36}, {72, 56}, {52, 56}};
-const Point star[] = {{39.61, 15.73}, {32.52, 29.87}, {16.90, 32.37}, {28.16, 43.38}, {25.61, 59.00},
-            {39.61, 51.70}, {53.66, 59.00}, {51.12, 43.38}, {62.37, 32.32}, {46.76, 29.87}, {39.61, 15.73}};
+const Point star[] = {{44.61, 15.73}, {37.52, 29.87}, {21.90, 32.37}, {33.16, 43.38}, {30.61, 59.00},
+            {44.61, 51.70}, {58.66, 59.00}, {56.12, 43.38}, {67.37, 32.32}, {51.76, 29.87}, {44.61, 15.73}};
 const Point triangle[] = {{42, 56}, {52, 22.36}, {62, 56}, {42, 56}};
 
 void display_square() {
@@ -124,11 +124,12 @@ void display_square() {
     // brain.screen.print(square pixel art)
     // Display square the robot will actually draw
     for (int i = 0; i < ((sizeof(square) / sizeof(square[i]) - 1)); i++) {
-        float start_x = square[i].x * 1.1 + 15;
-        float start_y = square[i].y * 1.1 - 20;
-        float new_x = square[i+1].x * 1.1 + 15;
-        float new_y = square[i+1].y * 1.1 - 20;
+        float start_x = square[i].x * 1.15 + 15;
+        float start_y = square[i].y * 1.15 - 20;
+        float new_x = square[i+1].x * 1.15 + 15;
+        float new_y = square[i+1].y * 1.15 - 20;
         // Additions of +5 and -20 made to center the square properly on the screen
+        // Scale of 1.15 added to display square bigger on screen
         Brain.Screen.drawLine(start_x, start_y, new_x, new_y);
     }
 }
@@ -291,12 +292,13 @@ float deg_to_dist(float deg){
 }
 
 void remote_control(bool& pen_up) {  
+  Brain.Screen.clearScreen();
   float vLeft = 0;
   float vRight = 0;
   
   configureAllSensors();
   
-  while(!Controller.ButtonEDown.pressing()) {
+  while(!Controller.ButtonEUp.pressing()) {
     // Pen up or down
     if (Controller.ButtonFDown.pressing()) {
       lower_pen_down(pen_up);
@@ -305,8 +307,8 @@ void remote_control(bool& pen_up) {
       lift_pen_up(pen_up);
     }
 
-    float dx = (float) Controller.AxisB.position()*5 ;
-    float dy = (float) Controller.AxisA.position()*5;
+    float dx = -(float) Controller.AxisB.position()*2 ;
+    float dy = (float) Controller.AxisA.position()*2;
 
     Rope current_rope = { ROPE_LENGTH, ROPE_LENGTH};
 
@@ -319,13 +321,16 @@ void remote_control(bool& pen_up) {
     vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
     vRight = get_velocity({ current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y }, dx, dy);
 
-    if (Controller.AxisB.position() != 0 || Controller.AxisB.position() != 0 ) {
+    vLeft *= 360/CF;
+    vRight *= 360/CF;
+
+    if (Controller.AxisA.position() != 0 || Controller.AxisB.position() != 0 ) {
       leftMotor.spin(forward, vLeft , dps);
       rightMotor.spin(forward, vRight, dps);
     }
     else {
-      leftMotor.stop();
-      rightMotor.stop();
+      leftMotor.stop(brake);
+      rightMotor.stop(brake);
     }
 
     Brain.Screen.clearLine(1);
@@ -416,7 +421,7 @@ class Plotter
                 }
             }
 
-            while (!leftDone || !rightDone) {
+            while ((!leftDone || !rightDone) && (!e_stop)) {
                 if (!leftDone && fabs(leftMotor.position(degrees) - startL) >= fabs(left_deg)) {
                     leftMotor.stop(brake);
                     leftDone = true;
@@ -425,7 +430,7 @@ class Plotter
                     rightMotor.stop(brake);
                     rightDone = true;
                 }
-                //if (Controller.ButtonEUp.pressing()) e_stop = true;
+                if (Controller.ButtonEUp.pressing()) e_stop = true;
                 wait(5, msec);
             }
 
@@ -479,13 +484,15 @@ void vector_path(bool& pen_up, Plotter& plotter, const Point to_draw[], bool &e_
     lower_pen_down(pen_up);
     // draw_shape(num_coords, plotter, to_draw, e_stop);
     draw_shape(num_coords, plotter, to_draw, e_stop);
-    Brain.Screen.setCursor(1,1);
+    lift_pen_up(pen_up);
 }
 
 
 // Button for E-stop
 // Button for controller control
 int main(){
+
+    timer drawing_timer;
 
     vexcodeInit();
 
@@ -532,11 +539,12 @@ int main(){
         //Point p1 = {52, 46};
         //Point p2 = {72, 46};
         //plotter.move_point_to_point(p1, temp);
-        
         //plotter.move_path(p2, temp);
-        
         //plotter.move_path(p1, temp);
+        
         int shape_num = pick_shape();
+
+        drawing_timer.clear();
         Brain.Screen.setCursor(2, 1);
         Brain.Screen.print("Drawing");
         Brain.Screen.setCursor(3, 1);
@@ -557,14 +565,19 @@ int main(){
           wait(2, seconds);
         }
     }
-    Brain.Screen.clearScreen();
-    Brain.Screen.setFont(mono20);
-    Brain.Screen.setCursor(2, 1);
-    Brain.Screen.print("Drawing");
-    Brain.Screen.setCursor(4, 1);
-    Brain.Screen.print("finished.");
-    lift_pen_up(pen_up);
-    plotter.move_point_to_point(starting_location, e_stop, 30);
+    if (!e_stop) {
+        Brain.Screen.clearScreen();
+        Brain.Screen.setFont(mono20);
+        Brain.Screen.setCursor(1, 1);
+        Brain.Screen.print("Drawing");
+        Brain.Screen.setCursor(2, 1);
+        Brain.Screen.print("finished!");
+        Brain.Screen.setCursor(4, 1);
+        Brain.Screen.print("Time: %.2f", drawing_timer.time(seconds));
+        Brain.Screen.setCursor(5, 1);
+        Brain.Screen.print("seconds passed.");
+        plotter.move_point_to_point(starting_location, e_stop, 30);
+    }
     Brain.programStop();
     
 }
