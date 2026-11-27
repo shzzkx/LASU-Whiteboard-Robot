@@ -321,8 +321,8 @@ void remote_control(bool& pen_up) {
     vLeft = get_velocity({ current_point.x - GAP_DIST/2, current_point.y }, dx, dy);
     vRight = get_velocity({ current_point.x + GAP_DIST/2 - MAX_WIDTH, current_point.y }, dx, dy);
 
-    vLeft *= 360/CF;
-    vRight *= 360/CF;
+    vLeft *= 180/CF;
+    vRight *= 180/CF;
 
     if (Controller.AxisA.position() != 0 || Controller.AxisB.position() != 0 ) {
       leftMotor.spin(forward, vLeft , dps);
